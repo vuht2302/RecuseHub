@@ -19,7 +19,7 @@ interface CreateRequestProps {
   onViewChange: (view: View) => void;
 }
 
-export const CreateRequest: React.FC<CreateRequestProps> = ({
+export const CreateRequestPage: React.FC<CreateRequestProps> = ({
   onViewChange,
 }) => {
   const [incidentType, setIncidentType] = useState<"medical" | "lost">(

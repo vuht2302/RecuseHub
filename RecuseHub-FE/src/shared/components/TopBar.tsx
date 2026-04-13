@@ -1,6 +1,6 @@
 import React from "react";
 import { UserCircle, Settings } from "lucide-react";
-import { View } from "../../../shared/types";
+import { View } from "../types";
 
 interface TopBarProps {
   currentView: View;

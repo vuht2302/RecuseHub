@@ -4,14 +4,14 @@
  */
 
 import React, { useState } from "react";
-import { TopBar } from "./features/navigation/components/TopBar";
-import { Sidebar } from "./features/navigation/components/Sidebar";
-import { HomeView } from "./features/home/components/HomeView";
-import { AlertCenter } from "./features/alerts/components/AlertCenter";
-import { RescueTrack } from "./features/tracking/components/RescueTrack";
-import { CreateRequest } from "./features/request/components/CreateRequest";
-import { SupportConfirmed } from "./features/request/components/SupportConfirmed";
-import { View } from "./shared/types";
+import { TopBar } from "../shared/components/TopBar";
+import { Sidebar } from "../shared/components/Sidebar";
+import { HomePage } from "../features/home/pages/HomePage";
+import { AlertCenterPage } from "../features/alerts/pages/AlertCenterPage";
+import { RescueTrackPage } from "../features/tracking/pages/RescueTrackPage";
+import { CreateRequestPage } from "../features/request/pages/CreateRequestPage";
+import { SupportConfirmedPage } from "../features/request/pages/SupportConfirmedPage";
+import { View } from "../shared/types";
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>("home");
@@ -19,17 +19,17 @@ export default function App() {
   const renderView = () => {
     switch (currentView) {
       case "home":
-        return <HomeView onViewChange={setCurrentView} />;
+        return <HomePage onViewChange={setCurrentView} />;
       case "alerts":
-        return <AlertCenter onViewChange={setCurrentView} />;
+        return <AlertCenterPage onViewChange={setCurrentView} />;
       case "track":
-        return <RescueTrack onViewChange={setCurrentView} />;
+        return <RescueTrackPage onViewChange={setCurrentView} />;
       case "request":
-        return <CreateRequest onViewChange={setCurrentView} />;
+        return <CreateRequestPage onViewChange={setCurrentView} />;
       case "confirmed":
-        return <SupportConfirmed onViewChange={setCurrentView} />;
+        return <SupportConfirmedPage onViewChange={setCurrentView} />;
       default:
-        return <HomeView onViewChange={setCurrentView} />;
+        return <HomePage onViewChange={setCurrentView} />;
     }
   };
 

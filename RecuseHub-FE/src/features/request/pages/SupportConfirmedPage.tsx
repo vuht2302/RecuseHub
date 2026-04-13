@@ -13,7 +13,7 @@ interface SupportConfirmedProps {
   onViewChange: (view: View) => void;
 }
 
-export const SupportConfirmed: React.FC<SupportConfirmedProps> = ({
+export const SupportConfirmedPage: React.FC<SupportConfirmedProps> = ({
   onViewChange,
 }) => {
   return (

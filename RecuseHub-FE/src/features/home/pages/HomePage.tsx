@@ -14,7 +14,7 @@ interface HomeViewProps {
   onViewChange: (view: View) => void;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ onViewChange }) => {
+export const HomePage: React.FC<HomeViewProps> = ({ onViewChange }) => {
   return (
     <div className="max-w-7xl mx-auto">
       <motion.div

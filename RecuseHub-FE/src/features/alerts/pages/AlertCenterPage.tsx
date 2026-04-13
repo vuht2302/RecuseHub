@@ -14,7 +14,9 @@ interface AlertCenterProps {
   onViewChange: (view: View) => void;
 }
 
-export const AlertCenter: React.FC<AlertCenterProps> = ({ onViewChange }) => {
+export const AlertCenterPage: React.FC<AlertCenterProps> = ({
+  onViewChange,
+}) => {
   const alerts: Alert[] = [
     {
       id: "1",

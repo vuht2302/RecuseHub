@@ -1,6 +1,6 @@
 import React from "react";
 import { Map as MapIcon, Zap, AlertTriangle } from "lucide-react";
-import { View } from "../../../shared/types";
+import { View } from "../types";
 
 interface SidebarProps {
   currentView: View;
