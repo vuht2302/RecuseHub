@@ -2,6 +2,7 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import {
   House,
+  Send,
   LayoutDashboard,
   Package,
   Truck,
@@ -19,6 +20,7 @@ import {
   UserRound,
   BookText,
   LayoutGrid,
+  SquareMenu,
 } from "lucide-react";
 import { useManager } from "../context/ManagerContext";
 import { useCoordinator } from "../context/CoordinatorContext";
@@ -43,6 +45,12 @@ const managerMenuItems: ManagerMenuItem[] = [
     id: "inventory",
     label: "Quản lý kho",
     icon: Package,
+    color: "text-black-600",
+  },
+  {
+    id: "event",
+    label: "Quản lý sự kiện",
+    icon: SquareMenu,
     color: "text-black-600",
   },
   {
