@@ -369,10 +369,6 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="w-20 md:w-72 border-r border-outline-variant/20 bg-surface-container-low/40 min-h-[calc(100vh-5rem)] sticky top-20 font-primary">
       <div className="px-3 md:px-4 py-6">
-        <p className="hidden md:block text-xs font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-4">
-          Điều hướng
-        </p>
-
         <nav className="space-y-2">
           {generalItems.map((item) => (
             <NavLink
