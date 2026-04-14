@@ -21,6 +21,8 @@ import ManagerDashboard from "../features/manager/pages/dashboard";
 
 export default function App() {
   const location = useLocation();
+  const isHomeRoute =
+    location.pathname === "/" || location.pathname === "/home";
   const isRescueTeamRoute = location.pathname === "/rescue-team";
   const isCoordinatorRoute = location.pathname.startsWith(
     "/rescue-coordinator",
@@ -83,13 +85,29 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-surface selection:bg-blue-950/20 selection:text-blue-950">
+    <div
+      className={
+        isHomeRoute
+          ? "h-screen overflow-hidden bg-surface selection:bg-blue-950/20 selection:text-blue-950"
+          : "min-h-screen bg-surface selection:bg-blue-950/20 selection:text-blue-950"
+      }
+    >
       <TopBar />
 
-      <div className="flex pt-20">
-        <Sidebar />
+      <div
+        className={
+          isHomeRoute ? "flex pt-20 h-screen overflow-hidden" : "flex pt-20"
+        }
+      >
+        {!isHomeRoute && <Sidebar />}
 
-        <main className="flex-1 p-4 md:p-8">
+        <main
+          className={
+            isHomeRoute
+              ? "flex-1 h-[calc(100vh-80px)] overflow-hidden p-0"
+              : "flex-1 p-4 md:p-8"
+          }
+        >
           <Routes>
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/home" element={<HomeView />} />

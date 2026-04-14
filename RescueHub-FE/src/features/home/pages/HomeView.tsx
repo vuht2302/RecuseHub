@@ -1,236 +1,470 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
+import vietmapgl from "@vietmap/vietmap-gl-js/dist/vietmap-gl";
+import "@vietmap/vietmap-gl-js/dist/vietmap-gl.css";
 import {
-  AlertCircle,
-  Stethoscope,
-  Shield,
-  ArrowRight,
-  MessageSquare,
-  BellPlus,
+  HandHeart,
+  LifeBuoy,
+  LocateFixed,
+  MapPin,
+  Phone,
+  Siren,
 } from "lucide-react";
 import { ConfirmationModal } from "../../../shared/components/ConfirmationModal";
 
+type Coordinate = {
+  lat: number;
+  lng: number;
+};
+
+type ReliefPoint = {
+  id: string;
+  title: string;
+  addressText: string;
+  lat: number;
+  lng: number;
+  statusName: string;
+  statusColor: string;
+};
+
+type PublicApiEnvelope = {
+  data?: any;
+  Data?: any;
+};
+
+const DEFAULT_CENTER: Coordinate = {
+  lat: 10.7769,
+  lng: 106.7009,
+};
+
+const DEFAULT_HOTLINE = "1900xxxx";
+
+const isWithinVietnamBounds = (lat: number, lng: number) =>
+  lat >= 8.0 && lat <= 24.5 && lng >= 102.0 && lng <= 110.0;
+
+const getDistanceKm = (from: Coordinate, to: Coordinate) => {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRad(to.lat - from.lat);
+  const dLng = toRad(to.lng - from.lng);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(from.lat)) *
+      Math.cos(toRad(to.lat)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+};
+
 export const HomeView: React.FC = () => {
   const navigate = useNavigate();
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<vietmapgl.Map | null>(null);
+  const mapMarkersRef = useRef<vietmapgl.Marker[]>([]);
+
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [hotline, setHotline] = useState(DEFAULT_HOTLINE);
+  const [sosStatus, setSosStatus] = useState<
+    "idle" | "sending" | "done" | "error"
+  >("idle");
+  const [locationStatus, setLocationStatus] = useState<
+    "locating" | "granted" | "denied" | "unsupported"
+  >("locating");
+  const [location, setLocation] = useState<Coordinate>(DEFAULT_CENTER);
+  const [reliefPoints, setReliefPoints] = useState<ReliefPoint[]>([]);
+
+  const vietmapApiKey = (import.meta.env.VITE_VIETMAP_API_KEY ?? "").trim();
+  const hasVietmapKey = vietmapApiKey.length > 0;
+  const canUseVietmap =
+    hasVietmapKey && isWithinVietnamBounds(location.lat, location.lng);
+
+  const nearestReliefPoint = useMemo(() => {
+    if (reliefPoints.length === 0) {
+      return null;
+    }
+
+    return reliefPoints
+      .map((point) => ({
+        point,
+        distanceKm: getDistanceKm(location, { lat: point.lat, lng: point.lng }),
+      }))
+      .sort((left, right) => left.distanceKm - right.distanceKm)[0];
+  }, [location, reliefPoints]);
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationStatus("unsupported");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setLocationStatus("granted");
+      },
+      () => {
+        setLocationStatus("denied");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 9000,
+      },
+    );
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadBootstrap = async () => {
+      try {
+        const response = await fetch("/api/v1/public/bootstrap", {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as PublicApiEnvelope;
+        const bootstrapData = payload.data ?? payload.Data;
+
+        if (typeof bootstrapData?.hotline === "string") {
+          setHotline(bootstrapData.hotline);
+        }
+
+        if (
+          typeof bootstrapData?.defaultMapCenter?.lat === "number" &&
+          typeof bootstrapData?.defaultMapCenter?.lng === "number" &&
+          locationStatus !== "granted"
+        ) {
+          setLocation({
+            lat: bootstrapData.defaultMapCenter.lat,
+            lng: bootstrapData.defaultMapCenter.lng,
+          });
+        }
+      } catch {
+        // Keep default values when API is unavailable.
+      }
+    };
+
+    void loadBootstrap();
+
+    return () => {
+      controller.abort();
+    };
+  }, [locationStatus]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadNearbyReliefPoints = async () => {
+      try {
+        const query = new URLSearchParams({
+          lat: location.lat.toString(),
+          lng: location.lng.toString(),
+          radiusKm: "5",
+        });
+
+        const response = await fetch(
+          `/api/v1/public/map-data?${query.toString()}`,
+          {
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as PublicApiEnvelope;
+        const mapData = payload.data ?? payload.Data;
+        const markers = Array.isArray(mapData?.markers) ? mapData.markers : [];
+
+        const parsedMarkers: ReliefPoint[] = markers
+          .filter((marker: any) => marker?.markerType === "RELIEF_POINT")
+          .map((marker: any) => ({
+            id: String(marker.id ?? Math.random()),
+            title: String(marker.title ?? "Điểm cứu trợ"),
+            addressText: String(
+              marker.position?.addressText ?? "Chưa có địa chỉ",
+            ),
+            lat: Number(marker.position?.lat ?? 0),
+            lng: Number(marker.position?.lng ?? 0),
+            statusName: String(marker.status?.name ?? "Đang hoạt động"),
+            statusColor: String(marker.status?.color ?? "#22C55E"),
+          }))
+          .filter(
+            (marker: ReliefPoint) =>
+              !Number.isNaN(marker.lat) && !Number.isNaN(marker.lng),
+          );
+
+        setReliefPoints(parsedMarkers);
+      } catch {
+        setReliefPoints([]);
+      }
+    };
+
+    void loadNearbyReliefPoints();
+
+    return () => {
+      controller.abort();
+    };
+  }, [location.lat, location.lng]);
+
+  useEffect(() => {
+    if (!canUseVietmap || !mapContainerRef.current || mapRef.current) {
+      return;
+    }
+
+    const map = new vietmapgl.Map({
+      container: mapContainerRef.current,
+      style: `https://maps.vietmap.vn/maps/styles/tm/style.json?apikey=${vietmapApiKey}`,
+      center: [location.lng, location.lat],
+      zoom: 14,
+    });
+
+    map.addControl(new vietmapgl.NavigationControl(), "top-right");
+    mapRef.current = map;
+
+    return () => {
+      mapMarkersRef.current.forEach((marker) => marker.remove());
+      mapMarkersRef.current = [];
+      map.remove();
+      mapRef.current = null;
+    };
+  }, [canUseVietmap, location.lat, location.lng, vietmapApiKey]);
+
+  useEffect(() => {
+    if (!canUseVietmap || !mapRef.current) {
+      return;
+    }
+
+    const map = mapRef.current;
+
+    mapMarkersRef.current.forEach((marker) => marker.remove());
+    mapMarkersRef.current = [];
+
+    const userMarker = new vietmapgl.Marker({ color: "#2563eb" })
+      .setLngLat([location.lng, location.lat])
+      .setPopup(
+        new vietmapgl.Popup({ offset: 10 }).setText("Vị trí hiện tại của bạn"),
+      )
+      .addTo(map);
+
+    mapMarkersRef.current.push(userMarker);
+
+    reliefPoints.forEach((point) => {
+      const reliefMarker = new vietmapgl.Marker({ color: "#ef4444" })
+        .setLngLat([point.lng, point.lat])
+        .setPopup(
+          new vietmapgl.Popup({ offset: 10 }).setHTML(
+            `<strong>${point.title}</strong><br/>${point.addressText}`,
+          ),
+        )
+        .addTo(map);
+
+      mapMarkersRef.current.push(reliefMarker);
+    });
+
+    map.flyTo({
+      center: [location.lng, location.lat],
+      zoom: 14,
+      duration: 900,
+      essential: true,
+    });
+  }, [canUseVietmap, location.lat, location.lng, reliefPoints]);
+
+  const mapFallbackSrc = useMemo(() => {
+    const bbox = `${location.lng - 0.02}%2C${location.lat - 0.02}%2C${location.lng + 0.02}%2C${location.lat + 0.02}`;
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${location.lat}%2C${location.lng}`;
+  }, [location.lat, location.lng]);
 
   const handleConfirmSubmit = () => {
-    navigate("/confirmed");
+    void (async () => {
+      setSosStatus("sending");
+
+      try {
+        const response = await fetch("/api/v1/public/incidents/sos", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("SOS request failed");
+        }
+
+        setSosStatus("done");
+      } catch {
+        setSosStatus("error");
+      }
+    })();
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8 p-1 bg-error-container/20 rounded-full flex items-center gap-3 pr-4 border border-error/10"
-      >
-        <div className="w-3 h-3 rounded-full bg-error ml-2 pulse-glow"></div>
-        <span className="text-error font-bold text-sm tracking-tight font-headline">
-          CẢNH BÁO: Có 2 sự cố khẩn cấp gần bạn, hãy chuẩn bị sẵn sàng để hỗ trợ
-          nếu cần thiết!
-        </span>
-        <span className="ml-auto text-xs text-on-surface-variant font-bold uppercase tracking-widest">
-          ĐANG HOẠT ĐỘNG
-        </span>
-      </motion.div>
+    <div className="w-full h-full">
+      <section className="relative h-full overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-surface-container-low/60 to-surface-container-lowest/20 z-10 pointer-events-none" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 flex flex-col gap-8">
-          <section className="relative h-[480px] rounded-[2rem] overflow-hidden bg-surface-container-lowest shadow-sm flex flex-col items-center justify-center text-center p-12">
-            <div className="absolute inset-0 z-0 opacity-10 grayscale hover:opacity-20 transition-opacity duration-700">
-              <img
-                className="w-full h-full object-cover"
-                src="https://picsum.photos/seed/map/1200/800"
-                alt="Nen ban do"
-                referrerPolicy="no-referrer"
-              />
+        {canUseVietmap ? (
+          <div ref={mapContainerRef} className="h-full w-full" />
+        ) : (
+          <iframe
+            title="Bản đồ khẩn cấp"
+            src={mapFallbackSrc}
+            className="h-full w-full"
+            loading="lazy"
+          />
+        )}
+
+        <div className="absolute top-5 left-5 z-20 bg-surface-container-lowest/95 backdrop-blur-md rounded-2xl px-4 py-3 border border-outline-variant/30 shadow-lg max-w-xs">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-on-surface-variant font-bold">
+            Trang chủ khẩn cấp
+          </p>
+          <h1 className="text-2xl font-headline font-black text-on-surface mt-1 leading-tight">
+            Bản đồ cứu nạn thời gian thực
+          </h1>
+          <p className="text-xs text-on-surface-variant mt-1">
+            Mở ngay khi truy cập, ưu tiên xác định vị trí và gọi hỗ trợ nhanh.
+          </p>
+        </div>
+
+        <div className="absolute top-5 right-5 z-20 space-y-3 w-[280px] max-w-[calc(100%-2.5rem)]">
+          <div className="bg-surface-container-lowest/95 backdrop-blur-md rounded-2xl p-4 border border-outline-variant/30 shadow-lg">
+            <div className="flex items-center gap-2 text-primary mb-1">
+              <LocateFixed size={16} />
+              <span className="text-[11px] font-bold uppercase tracking-[0.15em]">
+                Vị trí hiện tại
+              </span>
             </div>
-            <div className="relative z-10 max-w-lg">
-              <h1 className="text-5xl font-headline font-extrabold text-on-surface leading-tight tracking-tighter mb-4">
-                Bạn Cần Hỗ Trợ Ngay?
-              </h1>
-              <p className="text-on-surface-variant text-lg mb-12 font-medium">
-                Kết nối nhanh tới đội điều phối cứu nạn và tình nguyện viên gần
-                nhất.
-              </p>
+            <p className="text-sm font-bold text-on-surface">
+              {location.lat.toFixed(5)}°, {location.lng.toFixed(5)}°
+            </p>
+            <p className="text-xs text-on-surface-variant mt-1">
+              {locationStatus === "granted" && "Đã định vị thiết bị"}
+              {locationStatus === "locating" && "Đang lấy vị trí của bạn..."}
+              {locationStatus === "denied" &&
+                "Bạn đã từ chối GPS, đang dùng vị trí mặc định"}
+              {locationStatus === "unsupported" &&
+                "Trình duyệt không hỗ trợ GPS"}
+            </p>
+          </div>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsConfirmationOpen(true)}
-                className="group relative w-72 h-72 rounded-full bg-gradient-to-br from-error to-red-700 flex flex-col items-center justify-center shadow-2xl transition-all duration-300"
-              >
-                <div className="absolute inset-0 rounded-full border-4 border-error opacity-20 group-hover:scale-125 transition-transform duration-700"></div>
-                <AlertCircle className="text-white mb-2" size={64} />
-                <span className="text-white font-headline font-black text-2xl tracking-tighter uppercase">
-                  Yêu Cầu Hỗ Trợ
+          <div className="bg-surface-container-lowest/95 backdrop-blur-md rounded-2xl p-4 border border-outline-variant/30 shadow-lg">
+            <div className="flex items-center gap-2 text-error mb-1">
+              <MapPin size={16} />
+              <span className="text-[11px] font-bold uppercase tracking-[0.15em]">
+                Điểm cứu trợ gần nhất
+              </span>
+            </div>
+            {nearestReliefPoint ? (
+              <>
+                <p className="text-sm font-bold text-on-surface">
+                  {nearestReliefPoint.point.title}
+                </p>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  {nearestReliefPoint.point.addressText}
+                </p>
+                <p className="text-xs mt-2 font-semibold text-on-surface">
+                  Cách bạn khoảng {nearestReliefPoint.distanceKm.toFixed(2)} km
+                </p>
+                <span
+                  className="inline-flex mt-2 px-2 py-1 rounded-lg text-[11px] font-bold"
+                  style={{
+                    color: nearestReliefPoint.point.statusColor,
+                    backgroundColor: `${nearestReliefPoint.point.statusColor}20`,
+                  }}
+                >
+                  {nearestReliefPoint.point.statusName}
                 </span>
-                <span className="absolute -bottom-12 text-error font-bold text-sm animate-bounce">
-                  NHẪN VÀ GIỮ
-                </span>
-              </motion.button>
-            </div>
-          </section>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-surface-container-low p-8 rounded-[2rem] hover:bg-surface-container-high transition-colors group cursor-pointer">
-              <div className="flex justify-between items-start mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <Stethoscope className="text-primary" size={32} />
-                </div>
-                <ArrowRight
-                  className="text-outline group-hover:translate-x-1 transition-transform"
-                  size={24}
-                />
-              </div>
-              <h3 className="text-2xl font-headline font-extrabold text-on-surface mb-2">
-                Hướng dẫn sơ cứu
-              </h3>
-              <p className="text-on-surface-variant leading-relaxed">
-                Huong dan tung buoc cho xu ly chan thuong va ho tro su song co
-                ban.
+              </>
+            ) : (
+              <p className="text-xs text-on-surface-variant">
+                Chưa nhận được dữ liệu điểm cứu trợ gần bạn.
               </p>
-            </div>
-
-            <div className="bg-surface-container-low p-8 rounded-[2rem] hover:bg-surface-container-high transition-colors group cursor-pointer">
-              <div className="flex justify-between items-start mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-tertiary/10 flex items-center justify-center">
-                  <Shield className="text-tertiary" size={32} />
-                </div>
-                <ArrowRight
-                  className="text-outline group-hover:translate-x-1 transition-transform"
-                  size={24}
-                />
-              </div>
-              <h3 className="text-2xl font-headline font-extrabold text-on-surface mb-2">
-                Khu vực an toàn
-              </h3>
-              <p className="text-on-surface-variant leading-relaxed">
-                Ban do trung tam so tan va diem tiep te da duoc xac minh trong
-                khu vuc.
-              </p>
-            </div>
+            )}
           </div>
         </div>
 
-        <aside className="lg:col-span-4 flex flex-col gap-6">
-          <div className="bg-surface-container-lowest p-8 rounded-[2.5rem] shadow-sm flex-1">
-            <h2 className="text-2xl font-headline font-bold text-on-surface mb-8 tracking-tight">
-              Trạn thái hiện tại
-            </h2>
+        <div className="absolute bottom-5 left-5 right-5 z-20 grid grid-cols-1 md:grid-cols-4 gap-3">
+          <button
+            onClick={() => {
+              setSosStatus("idle");
+              setIsConfirmationOpen(true);
+            }}
+            className="md:col-span-1 h-14 rounded-xl bg-gradient-to-r from-error to-red-700 text-white font-black text-lg shadow-xl flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.99] transition-all"
+          >
+            <Siren size={20} />
+            SOS
+          </button>
 
-            <div className="space-y-10">
-              <div className="relative pl-8 border-l-2 border-outline-variant">
-                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-primary border-4 border-surface-container-lowest"></div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-bold uppercase tracking-widest text-primary">
-                    Vị trí của bạn
-                  </span>
-                  <span className="text-xs text-on-surface-variant font-medium">
-                    Đã xác minh 2 phút trước
-                  </span>
-                </div>
-                <p className="text-lg font-headline font-bold text-on-surface">
-                  Khu 4, quận trung tâm
-                </p>
-                <p className="text-sm text-on-surface-variant">
-                  4 đội đang trực trong bán kính gần
-                </p>
-              </div>
+          <button
+            onClick={() => navigate("/request")}
+            className="h-14 rounded-xl bg-primary text-on-primary font-bold shadow-lg flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all"
+          >
+            <LifeBuoy size={18} />
+            Gửi cứu hộ
+          </button>
 
-              <div className="relative pl-8 border-l-2 border-outline-variant">
-                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-error border-4 border-surface-container-lowest pulse-glow"></div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-bold uppercase tracking-widest text-error">
-                    Sự cố gần bạn
-                  </span>
-                  <span className="text-xs text-on-surface-variant font-medium">
-                    Cách 400m
-                  </span>
-                </div>
-                <p className="text-lg font-headline font-bold text-on-surface">
-                  Nguy co sap do cong trinh
-                </p>
-                <p className="text-sm text-on-surface-variant">
-                  Doi phan ung dang di chuyen
-                </p>
-              </div>
+          <button
+            onClick={() => navigate("/request")}
+            className="h-14 rounded-xl bg-tertiary text-on-tertiary font-bold shadow-lg flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all"
+          >
+            <HandHeart size={18} />
+            Gửi cứu trợ
+          </button>
 
-              <div className="relative pl-8 border-l-2 border-outline-variant">
-                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-tertiary border-4 border-surface-container-lowest"></div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-bold uppercase tracking-widest text-tertiary">
-                    Moi truong
-                  </span>
-                  <span className="text-xs text-on-surface-variant font-medium">
-                    Cap nhat 5 phut truoc
-                  </span>
-                </div>
-                <p className="text-lg font-headline font-bold text-on-surface">
-                  Chat luong khong khi: Trung binh
-                </p>
-                <p className="text-sm text-on-surface-variant">
-                  Phat hien bui min tang cao
-                </p>
-              </div>
-            </div>
+          <a
+            href={`tel:${hotline.replace(/\s+/g, "")}`}
+            className="h-14 rounded-xl bg-surface-container-lowest border border-outline-variant/40 font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-surface-container-low transition-colors"
+          >
+            <Phone size={18} className="text-primary" />
+            Hotline: {hotline}
+          </a>
+        </div>
 
-            <div className="mt-12 bg-surface-container-low p-6 rounded-2xl">
-              <div className="flex items-center gap-4 mb-4">
-                <img
-                  className="w-12 h-12 rounded-full object-cover"
-                  src="https://picsum.photos/seed/sarah/100/100"
-                  alt="Dieu phoi vien"
-                  referrerPolicy="no-referrer"
-                />
-                <div>
-                  <p className="text-sm font-bold font-headline">
-                    Dieu phoi vien phu trach
-                  </p>
-                  <p className="text-xs text-on-surface-variant">
-                    Can bo Sarah Chen
-                  </p>
-                </div>
-              </div>
-              <button className="w-full bg-surface-container-highest py-3 rounded-xl font-bold text-primary flex items-center justify-center gap-2 hover:bg-outline-variant transition-colors">
-                <MessageSquare size={18} />
-                Ket noi trung tam chi huy
-              </button>
-            </div>
+        {!hasVietmapKey && (
+          <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 bg-amber-100 text-amber-900 px-3 py-2 rounded-lg text-xs font-bold border border-amber-300">
+            Chưa cấu hình VITE_VIETMAP_API_KEY, đang hiển thị bản đồ dự phòng.
           </div>
+        )}
 
-          <div className="h-48 rounded-[2.5rem] overflow-hidden relative shadow-sm group cursor-pointer">
-            <img
-              className="w-full h-full object-cover grayscale brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-700"
-              src="https://picsum.photos/seed/livemap/600/400"
-              alt="Ban do truc tiep"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6">
-              <span className="text-white text-xs font-bold tracking-widest uppercase mb-1">
-                Ban do truc tiep
-              </span>
-              <span className="text-white font-headline font-bold">
-                Theo doi luc luong cuu ho theo thoi gian thuc
-              </span>
-            </div>
+        {hasVietmapKey && !canUseVietmap && (
+          <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 bg-amber-100 text-amber-900 px-3 py-2 rounded-lg text-xs font-bold border border-amber-300 max-w-[320px] text-center">
+            Vị trí hiện tại đang ngoài vùng phủ dữ liệu Vietmap, chuyển sang bản
+            đồ dự phòng.
           </div>
-        </aside>
-      </div>
+        )}
 
-      <button className="fixed bottom-12 right-12 w-20 h-20 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50">
-        <BellPlus size={32} />
-      </button>
+        {(sosStatus === "done" || sosStatus === "error") && (
+          <div
+            className={`absolute bottom-24 left-1/2 -translate-x-1/2 z-20 rounded-xl px-4 py-3 text-sm font-semibold border shadow-lg max-w-[420px] text-center ${
+              sosStatus === "done"
+                ? "bg-green-50 text-green-700 border-green-200"
+                : "bg-red-50 text-red-700 border-red-200"
+            }`}
+          >
+            {sosStatus === "done"
+              ? "Đã gửi tín hiệu SOS thành công, trung tâm đang tiếp nhận."
+              : "Gửi SOS chưa thành công. Vui lòng thử lại hoặc gọi hotline ngay."}
+          </div>
+        )}
+      </section>
 
       <ConfirmationModal
         isOpen={isConfirmationOpen}
         onClose={() => setIsConfirmationOpen(false)}
         onConfirm={handleConfirmSubmit}
-        title="Xác nhận yêu cầu cứu hộ"
-        message="Bạn có chắc chắn cần hỗ trợ khẩn cấp không? Hành động này sẽ khiến đội cứu hộ được thông báo ngay lập tức."
-        confirmText="Có, tôi cần hỗ trợ"
+        title="Xác nhận gửi tín hiệu SOS"
+        message="Bạn chuẩn bị gửi SOS khẩn cấp đến trung tâm điều phối. Tiếp tục?"
+        confirmText={sosStatus === "sending" ? "Đang gửi..." : "Có, gửi SOS"}
         cancelText="Quay lại"
       />
     </div>
