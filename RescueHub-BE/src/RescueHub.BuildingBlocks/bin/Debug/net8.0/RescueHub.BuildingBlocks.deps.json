@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "RescueHub.BuildingBlocks/1.0.0": {
+        "runtime": {
+          "RescueHub.BuildingBlocks.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "RescueHub.BuildingBlocks/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

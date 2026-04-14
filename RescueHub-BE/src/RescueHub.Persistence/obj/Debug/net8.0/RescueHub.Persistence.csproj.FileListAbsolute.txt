@@ -1,0 +1,14 @@
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/bin/Debug/net8.0/RescueHub.Persistence.deps.json
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/bin/Debug/net8.0/RescueHub.Persistence.dll
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/bin/Debug/net8.0/RescueHub.Persistence.pdb
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/obj/Debug/net8.0/RescueHub.Persistence.csproj.AssemblyReference.cache
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/obj/Debug/net8.0/RescueHub.Persistence.GeneratedMSBuildEditorConfig.editorconfig
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/obj/Debug/net8.0/RescueHub.Persistence.AssemblyInfoInputs.cache
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/obj/Debug/net8.0/RescueHub.Persistence.AssemblyInfo.cs
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/obj/Debug/net8.0/RescueHub.Persistence.csproj.CoreCompileInputs.cache
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/obj/Debug/net8.0/EFCoreNpgsqlNetTopologySuite.cs
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/obj/Debug/net8.0/RescueHub.Persistence.sourcelink.json
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/obj/Debug/net8.0/RescueHub.Persistence.dll
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/obj/Debug/net8.0/refint/RescueHub.Persistence.dll
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/obj/Debug/net8.0/RescueHub.Persistence.pdb
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Persistence/obj/Debug/net8.0/ref/RescueHub.Persistence.dll

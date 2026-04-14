@@ -1,0 +1,16 @@
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/bin/Debug/net8.0/RescueHub.Modules.Media.deps.json
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/bin/Debug/net8.0/RescueHub.Modules.Media.dll
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/bin/Debug/net8.0/RescueHub.Modules.Media.pdb
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/bin/Debug/net8.0/RescueHub.BuildingBlocks.dll
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/bin/Debug/net8.0/RescueHub.BuildingBlocks.pdb
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/obj/Debug/net8.0/RescueHub.Modules.Media.csproj.AssemblyReference.cache
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/obj/Debug/net8.0/RescueHub.Modules.Media.GeneratedMSBuildEditorConfig.editorconfig
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/obj/Debug/net8.0/RescueHub.Modules.Media.AssemblyInfoInputs.cache
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/obj/Debug/net8.0/RescueHub.Modules.Media.AssemblyInfo.cs
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/obj/Debug/net8.0/RescueHub.Modules.Media.csproj.CoreCompileInputs.cache
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/obj/Debug/net8.0/RescueHub.Modules.Media.sourcelink.json
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/obj/Debug/net8.0/RescueHu.C6FC1134.Up2Date
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/obj/Debug/net8.0/RescueHub.Modules.Media.dll
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/obj/Debug/net8.0/refint/RescueHub.Modules.Media.dll
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/obj/Debug/net8.0/RescueHub.Modules.Media.pdb
+/Users/phihung/Documents/Code/RescueHub/RescueHub-BE/src/RescueHub.Modules.Media/obj/Debug/net8.0/ref/RescueHub.Modules.Media.dll
