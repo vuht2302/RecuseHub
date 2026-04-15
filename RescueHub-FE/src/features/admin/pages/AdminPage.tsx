@@ -1,0 +1,25 @@
+import React, { useState } from "react";
+import { AdminSidebar } from "../components/AdminSidebar";
+import Dashboard from "../../manager/pages/dashboard";
+
+
+export const AdminPage = () => {
+  const [activeMenu, setActiveMenu] = useState("dashboard");
+
+  const renderContent = () => {
+    switch (activeMenu) {
+      case "dashboard":
+        return <></>;
+        default: return<></>;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <AdminSidebar active={activeMenu} setActive={setActiveMenu} />
+
+      {/* Content */}
+      <div className="ml-64 p-6">{renderContent()}</div>
+    </div>
+  );
+};
