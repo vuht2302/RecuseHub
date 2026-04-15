@@ -3,6 +3,7 @@ import { AdminSidebar } from "../components/AdminSidebar";
 import Dashboard from "../components/Dashboard";
 import UserManagement from "../components/UserManagement";
 import RoleManagement from "../components/RoleManagement";
+import ReportDashboard from "../components/ReportDashboard";
 
 
 export const AdminPage = () => {
@@ -20,8 +21,8 @@ export const AdminPage = () => {
     //     return <SystemConfig />;
     //   case "workflow":
     //     return <Workflow />;
-    //   case "reports":
-    //     return <ReportDashboard />;
+      case "reports":
+        return <ReportDashboard />;
         default: return <Dashboard />;
     }
   };
