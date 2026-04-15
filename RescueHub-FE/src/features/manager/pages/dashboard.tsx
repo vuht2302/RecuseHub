@@ -498,7 +498,7 @@ function HCMMap() {
         fill="#1e293b"
         fontFamily="var(--font-primary)"
       >
-        HCM Service Coverage
+        Khu vực hoạt động
       </text>
 
       {/* Legend */}
@@ -1929,7 +1929,7 @@ export default function ManagerDashboard() {
                     className="text-xl font-bold text-slate-900"
                     style={{ fontFamily: "var(--font-primary)" }}
                   >
-                    Statistics
+                    Thống kê vận hành
                   </h3>
                   <p className="mt-1 text-sm text-slate-600">
                     Chỉ tiêu theo dõi hiệu quả vận hành theo tháng
@@ -1977,8 +1977,8 @@ export default function ManagerDashboard() {
               <StatisticsChart />
             </section>
 
-            {/* HCM Map & June Goals */}
-            <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {/* HCM Map & Analytics */}
+            <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
               <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-start justify-between">
                   <div>
@@ -1986,10 +1986,10 @@ export default function ManagerDashboard() {
                       className="text-xl font-bold text-slate-900"
                       style={{ fontFamily: "var(--font-primary)" }}
                     >
-                      Service Coverage
+                      Khu vực hoạt động
                     </h3>
                     <p className="mt-1 text-sm text-slate-600">
-                      HCM city distribution with MapLibre GL
+                      Các khu vực tại TP.HCM có hoạt động cứu hộ diễn ra
                     </p>
                   </div>
                   <button className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100">
@@ -2008,10 +2008,10 @@ export default function ManagerDashboard() {
                       className="text-xl font-bold text-slate-900"
                       style={{ fontFamily: "var(--font-primary)" }}
                     >
-                      June Goals
+                      Top khu vực có nhiều request nhất
                     </h3>
                     <p className="mt-1 text-sm text-slate-600">
-                      Mục tiêu ngân sách
+                      Thống kê số yêu cầu theo khu vực
                     </p>
                   </div>
                   <button className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100">
@@ -2019,69 +2019,473 @@ export default function ManagerDashboard() {
                   </button>
                 </div>
 
-                <div className="mt-8">
-                  <svg viewBox="0 0 360 180" className="w-full">
-                    <path
-                      d="M 30 150 A 120 120 0 0 1 330 150"
-                      fill="none"
-                      stroke="#e2e8f0"
-                      strokeWidth="12"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M 30 150 A 120 120 0 0 1 290 120"
-                      fill="none"
-                      stroke="#3b82f6"
-                      strokeWidth="12"
-                      strokeLinecap="round"
+                <div className="mt-6">
+                  <svg viewBox="0 0 400 250" className="w-full">
+                    {/* Bar Chart */}
+                    <rect
+                      x="50"
+                      y="20"
+                      width="30"
+                      height="180"
+                      fill="#3b82f6"
+                      rx="4"
                     />
                     <text
-                      x="180"
-                      y="85"
+                      x="65"
+                      y="220"
                       textAnchor="middle"
-                      className="fill-slate-600 text-sm"
+                      className="text-xs fill-slate-600"
                       style={{ fontFamily: "var(--font-primary)" }}
                     >
-                      June Goals
+                      Q1
                     </text>
                     <text
-                      x="180"
-                      y="125"
+                      x="65"
+                      y="10"
                       textAnchor="middle"
-                      className="fill-slate-900 text-4xl font-bold"
+                      className="text-sm fill-slate-900 font-bold"
                       style={{ fontFamily: "var(--font-primary)" }}
                     >
-                      $90K
+                      245
+                    </text>
+
+                    <rect
+                      x="110"
+                      y="40"
+                      width="30"
+                      height="160"
+                      fill="#0ea5e9"
+                      rx="4"
+                    />
+                    <text
+                      x="125"
+                      y="220"
+                      textAnchor="middle"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q2
+                    </text>
+                    <text
+                      x="125"
+                      y="30"
+                      textAnchor="middle"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      198
+                    </text>
+
+                    <rect
+                      x="170"
+                      y="10"
+                      width="30"
+                      height="190"
+                      fill="#06b6d4"
+                      rx="4"
+                    />
+                    <text
+                      x="185"
+                      y="220"
+                      textAnchor="middle"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q3
+                    </text>
+                    <text
+                      x="185"
+                      y="0"
+                      textAnchor="middle"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      312
+                    </text>
+
+                    <rect
+                      x="230"
+                      y="80"
+                      width="30"
+                      height="120"
+                      fill="#14b8a6"
+                      rx="4"
+                    />
+                    <text
+                      x="245"
+                      y="220"
+                      textAnchor="middle"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q4
+                    </text>
+                    <text
+                      x="245"
+                      y="70"
+                      textAnchor="middle"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      142
+                    </text>
+
+                    {/* Axis */}
+                    <line
+                      x1="40"
+                      y1="200"
+                      x2="280"
+                      y2="200"
+                      stroke="#e2e8f0"
+                      strokeWidth="1"
+                    />
+                    <line
+                      x1="40"
+                      y1="20"
+                      x2="40"
+                      y2="200"
+                      stroke="#e2e8f0"
+                      strokeWidth="1"
+                    />
+                  </svg>
+                </div>
+
+                <div className="mt-6 space-y-3 border-t border-slate-200 pt-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">
+                      Q3 - Khu vực Q3
+                    </span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      312 requests
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">
+                      Q1 - Khu vực Q1
+                    </span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      245 requests
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">
+                      Q2 - Khu vực Q2
+                    </span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      198 requests
+                    </span>
+                  </div>
+                </div>
+              </article>
+
+              <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3
+                      className="text-xl font-bold text-slate-900"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Khu vực có thời gian xử lý chậm nhất
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Đánh giá tốc độ phản ứng theo khu vực
+                    </p>
+                  </div>
+                  <button className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100">
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="mt-6">
+                  <svg viewBox="0 0 400 250" className="w-full">
+                    {/* Horizontal Bar Chart */}
+                    <text
+                      x="10"
+                      y="35"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Quận 1
+                    </text>
+                    <rect
+                      x="80"
+                      y="20"
+                      width="240"
+                      height="25"
+                      fill="#ef4444"
+                      rx="4"
+                    />
+                    <text
+                      x="330"
+                      y="37"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      45m
+                    </text>
+
+                    <text
+                      x="10"
+                      y="95"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Quận 2
+                    </text>
+                    <rect
+                      x="80"
+                      y="80"
+                      width="200"
+                      height="25"
+                      fill="#f97316"
+                      rx="4"
+                    />
+                    <text
+                      x="290"
+                      y="97"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      38m
+                    </text>
+
+                    <text
+                      x="10"
+                      y="155"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Quận 3
+                    </text>
+                    <rect
+                      x="80"
+                      y="140"
+                      width="160"
+                      height="25"
+                      fill="#eab308"
+                      rx="4"
+                    />
+                    <text
+                      x="250"
+                      y="157"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      28m
+                    </text>
+
+                    <text
+                      x="10"
+                      y="215"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Quận 4
+                    </text>
+                    <rect
+                      x="80"
+                      y="200"
+                      width="100"
+                      height="25"
+                      fill="#22c55e"
+                      rx="4"
+                    />
+                    <text
+                      x="190"
+                      y="217"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      18m
                     </text>
                   </svg>
                 </div>
 
-                <div className="mt-8 space-y-4 border-t border-slate-200 pt-6">
+                <div className="mt-6 border-t border-slate-200 pt-4">
+                  <p className="text-sm text-slate-600">
+                    <span className="font-semibold text-slate-900">Quận 1</span>{" "}
+                    cần cải thiện tốc độ xử lý
+                  </p>
+                </div>
+              </article>
+
+              <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex items-start justify-between">
                   <div>
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Marketing
-                      </p>
-                      <p className="text-sm font-semibold text-slate-900">
-                        85%
-                      </p>
-                    </div>
-                    <div className="h-2 rounded-full bg-slate-200">
-                      <div className="h-2 w-[85%] rounded-full bg-blue-500" />
-                    </div>
+                    <h3
+                      className="text-xl font-bold text-slate-900"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Khu vực thiếu team
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Ít đội nhưng nhiều request
+                    </p>
                   </div>
-                  <div>
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Operations
-                      </p>
-                      <p className="text-sm font-semibold text-slate-900">
-                        55%
-                      </p>
-                    </div>
-                    <div className="h-2 rounded-full bg-slate-200">
-                      <div className="h-2 w-[55%] rounded-full bg-blue-500" />
-                    </div>
+                  <button className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100">
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="mt-6">
+                  <svg viewBox="0 0 400 250" className="w-full">
+                    {/* Bubble/Scatter Chart - Requests vs Teams */}
+                    {/* X: Teams, Y: Requests */}
+
+                    {/* Axis labels */}
+                    <text
+                      x="350"
+                      y="245"
+                      textAnchor="middle"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Teams
+                    </text>
+                    <text
+                      x="15"
+                      y="120"
+                      textAnchor="middle"
+                      transform="rotate(-90 15 120)"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Requests
+                    </text>
+
+                    {/* Axis lines */}
+                    <line
+                      x1="50"
+                      y1="220"
+                      x2="370"
+                      y2="220"
+                      stroke="#e2e8f0"
+                      strokeWidth="1"
+                    />
+                    <line
+                      x1="50"
+                      y1="20"
+                      x2="50"
+                      y2="220"
+                      stroke="#e2e8f0"
+                      strokeWidth="1"
+                    />
+
+                    {/* Grid lines */}
+                    <line
+                      x1="50"
+                      y1="140"
+                      x2="370"
+                      y2="140"
+                      stroke="#f1f5f9"
+                      strokeWidth="1"
+                      strokeDasharray="2,2"
+                    />
+                    <line
+                      x1="150"
+                      y1="20"
+                      x2="150"
+                      y2="220"
+                      stroke="#f1f5f9"
+                      strokeWidth="1"
+                      strokeDasharray="2,2"
+                    />
+                    <line
+                      x1="250"
+                      y1="20"
+                      x2="250"
+                      y2="220"
+                      stroke="#f1f5f9"
+                      strokeWidth="1"
+                      strokeDasharray="2,2"
+                    />
+
+                    {/* Bubbles - Critical (Few teams, many requests) */}
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="20"
+                      fill="#ef4444"
+                      opacity="0.7"
+                    />
+                    <text
+                      x="80"
+                      y="85"
+                      textAnchor="middle"
+                      className="text-xs fill-white font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q1
+                    </text>
+
+                    <circle
+                      cx="120"
+                      cy="100"
+                      r="18"
+                      fill="#f97316"
+                      opacity="0.7"
+                    />
+                    <text
+                      x="120"
+                      y="105"
+                      textAnchor="middle"
+                      className="text-xs fill-white font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q2
+                    </text>
+
+                    {/* Bubbles - Good (Normal) */}
+                    <circle
+                      cx="250"
+                      cy="160"
+                      r="15"
+                      fill="#22c55e"
+                      opacity="0.7"
+                    />
+                    <text
+                      x="250"
+                      y="165"
+                      textAnchor="middle"
+                      className="text-xs fill-white font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q4
+                    </text>
+
+                    <circle
+                      cx="310"
+                      cy="170"
+                      r="14"
+                      fill="#3b82f6"
+                      opacity="0.7"
+                    />
+                    <text
+                      x="310"
+                      y="175"
+                      textAnchor="middle"
+                      className="text-xs fill-white font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q5
+                    </text>
+                  </svg>
+                </div>
+
+                <div className="mt-6 space-y-3 border-t border-slate-200 pt-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-red-500" />
+                    <span className="text-sm text-slate-600">
+                      <span className="font-semibold">Quận 1</span>: 3 teams,
+                      240 requests
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-orange-500" />
+                    <span className="text-sm text-slate-600">
+                      <span className="font-semibold">Quận 2</span>: 4 teams,
+                      198 requests
+                    </span>
                   </div>
                 </div>
               </article>
