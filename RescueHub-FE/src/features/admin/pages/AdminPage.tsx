@@ -4,6 +4,7 @@ import Dashboard from "../components/Dashboard";
 import UserManagement from "../components/UserManagement";
 import RoleManagement from "../components/RoleManagement";
 import ReportDashboard from "../components/ReportDashboard";
+import MasterDataPage from "../components/MasterDataPage";
 
 
 export const AdminPage = () => {
@@ -17,8 +18,8 @@ export const AdminPage = () => {
         return <UserManagement />;
      case "roles":
         return <RoleManagement />;
-    //   case "config":
-    //     return <SystemConfig />;
+      case "master-data":
+        return <MasterDataPage />;
     //   case "workflow":
     //     return <Workflow />;
       case "reports":

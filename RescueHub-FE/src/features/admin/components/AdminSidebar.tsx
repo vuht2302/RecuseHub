@@ -13,7 +13,7 @@ export const adminMenu = [
   { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
   { id: "users", label: "Tài khoản", icon: Users },
   { id: "roles", label: "Vai trò", icon: Shield },
-  { id: "config", label: "Cấu hình", icon: Settings },
+  { id: "master-data", label: "Danh mục hệ thống", icon: Settings },
   { id: "workflow", label: "Workflow", icon: SquareMenu },
   { id: "reports", label: "Báo cáo", icon: BarChart3 },
 ];
