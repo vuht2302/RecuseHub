@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { AdminSidebar } from "../components/AdminSidebar";
 import Dashboard from "../components/Dashboard";
 import UserManagement from "../components/UserManagement";
+import RoleManagement from "../components/RoleManagement";
 
 
 export const AdminPage = () => {
@@ -13,6 +14,14 @@ export const AdminPage = () => {
         return <Dashboard />;
       case "users":
         return <UserManagement />;
+     case "roles":
+        return <RoleManagement />;
+    //   case "config":
+    //     return <SystemConfig />;
+    //   case "workflow":
+    //     return <Workflow />;
+    //   case "reports":
+    //     return <ReportDashboard />;
         default: return <Dashboard />;
     }
   };
