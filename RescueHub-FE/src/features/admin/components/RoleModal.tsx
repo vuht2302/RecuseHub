@@ -1,88 +1,68 @@
 import React, { useState } from "react";
 
-const modules = {
-  users: ["view", "create", "edit", "delete"],
-  requests: ["view", "verify", "dispatch"],
-  teams: ["view", "assign"],
-  reports: ["view"],
-};
-
 const RoleModal = ({ onClose, onSubmit, defaultData }) => {
-  const [name, setName] = useState(defaultData?.name || "");
-  const [permissions, setPermissions] = useState(
-    defaultData?.permissions || {}
+  const [form, setForm] = useState(
+    defaultData
+      ? {
+          id: defaultData.id,
+          code: defaultData.code,
+          name: defaultData.name,
+          description: defaultData.description,
+        }
+      : {
+          code: "",
+          name: "",
+          description: "",
+        }
   );
 
-  const togglePermission = (module, perm) => {
-    const current = permissions[module] || [];
-
-    const updated = current.includes(perm)
-      ? current.filter((p) => p !== perm)
-      : [...current, perm];
-
-    setPermissions({
-      ...permissions,
-      [module]: updated,
-    });
-  };
-
   const handleSubmit = () => {
-    if (!name) {
-      alert("Nhập tên role!");
+    if (!form.code || !form.name) {
+      alert("Nhập đầy đủ thông tin!");
       return;
     }
 
-    onSubmit({
-      id: defaultData?.id,
-      name,
-      permissions,
-    });
-
+    onSubmit(form);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-xl w-[500px] space-y-4">
+      <div className="bg-white p-6 rounded-xl w-[400px] space-y-4">
         <h2 className="text-xl font-bold">
           {defaultData ? "Sửa role" : "Thêm role"}
         </h2>
 
-        {/* NAME */}
+        {/* CODE */}
         <input
-          placeholder="Tên role"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          placeholder="Code (VD: ADMIN)"
+          value={form.code}
+          disabled={!!defaultData}
+          onChange={(e) =>
+            setForm({ ...form, code: e.target.value })
+          }
           className="w-full border p-2 rounded"
         />
 
-        {/* PERMISSION MATRIX */}
-        <div className="space-y-3">
-          {Object.entries(modules).map(([module, perms]) => (
-            <div key={module}>
-              <p className="font-semibold capitalize">{module}</p>
-              <div className="flex gap-3 flex-wrap">
-                {perms.map((perm) => (
-                  <label
-                    key={perm}
-                    className="flex items-center gap-1 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={
-                        permissions[module]?.includes(perm) || false
-                      }
-                      onChange={() =>
-                        togglePermission(module, perm)
-                      }
-                    />
-                    {perm}
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* NAME */}
+        <input
+          placeholder="Tên role"
+          value={form.name}
+          onChange={(e) =>
+            setForm({ ...form, name: e.target.value })
+          }
+          className="w-full border p-2 rounded"
+        />
+
+        {/* DESCRIPTION */}
+        <textarea
+          placeholder="Mô tả"
+          value={form.description}
+          onChange={(e) =>
+            setForm({ ...form, description: e.target.value })
+          }
+          className="w-full border p-2 rounded"
+        />
 
         {/* ACTION */}
         <div className="flex justify-end gap-2">
