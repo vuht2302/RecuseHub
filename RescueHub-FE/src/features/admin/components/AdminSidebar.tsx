@@ -17,6 +17,7 @@ export const adminMenu = [
   { id: "master-data", label: "Danh mục hệ thống", icon: Settings },
   { id: "catalog", label: "Danh mục sản phẩm", icon: CarTaxiFront },
   { id: "workflow", label: "Workflow", icon: SquareMenu },
+  { id: "system-setting", label: "Cài đặt hệ thống", icon: Settings },
   { id: "reports", label: "Báo cáo", icon: BarChart3 },
 ];
 

@@ -7,6 +7,7 @@ import ReportDashboard from "../components/ReportDashboard";
 import MasterDataPage from "../components/MasterDataPage";
 import WorkflowPage from "../components/WorkflowPage";
 import CatalogManagement from "../components/CatalogManagement";
+import SystemSettingsPage from "../components/SystemSettingsPage";
 
 
 export const AdminPage = () => {
@@ -26,6 +27,8 @@ export const AdminPage = () => {
         return <CatalogManagement />;
       case "workflow":
         return <WorkflowPage />;
+      case "system-setting":
+        return <SystemSettingsPage />;
       case "reports":
         return <ReportDashboard />;
         default: return <Dashboard />;
