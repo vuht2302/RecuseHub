@@ -21,3 +21,19 @@ export interface RescueStatus {
   eta: string;
   location: string;
 }
+export interface RequestOTP {
+  phone: string;
+
+  purpose: "TRACKING";
+}
+
+export interface VerifyOTP {
+  expiredAt: string;
+  otpCode: string;
+}
+export interface ResponseOTP {
+  success: boolean;
+  message: string;
+  data: VerifyOTP;
+  error: null;
+}

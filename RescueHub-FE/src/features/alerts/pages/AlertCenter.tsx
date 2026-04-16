@@ -141,7 +141,7 @@ export const AlertCenter: React.FC = () => {
     <div className="max-w-4xl mx-auto">
       <header className="mb-12">
         <h1 className="text-5xl font-bold font-headline tracking-tighter text-on-surface mb-2">
-          Trung tâm cảnh bá
+          Trung tâm cảnh báo
         </h1>
         <p className="text-on-surface-variant font-medium text-lg">
           Cap nhat dieu phoi cuu ho va he thong theo thoi gian thuc.

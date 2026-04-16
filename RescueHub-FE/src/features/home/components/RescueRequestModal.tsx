@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { X, Camera, Trash2, Send } from "lucide-react";
 import {
   createPublicIncident,
-  getPublicBootstrap,
+  getPublicRescueForm,
   type BootstrapIncidentType,
   uploadIncidentMedia,
 } from "../../../shared/services/publicApi";
@@ -17,7 +17,7 @@ interface RescueRequestModalProps {
   onClose: () => void;
   defaultLocation: Coordinate;
   defaultAddress?: string;
-  onSubmitted?: () => void;
+  onSubmitted?: (trackingCode: string) => void;
 }
 
 export const RescueRequestModal: React.FC<RescueRequestModalProps> = ({
@@ -50,11 +50,9 @@ export const RescueRequestModal: React.FC<RescueRequestModalProps> = ({
 
     const loadBootstrap = async () => {
       try {
-        const bootstrapData = await getPublicBootstrap();
-        const nextIncidentTypes = Array.isArray(
-          bootstrapData.quickIncidentTypes,
-        )
-          ? bootstrapData.quickIncidentTypes
+        const formData = await getPublicRescueForm();
+        const nextIncidentTypes = Array.isArray(formData.incidentTypes)
+          ? formData.incidentTypes
           : [];
 
         setIncidentTypes(nextIncidentTypes);
@@ -129,7 +127,7 @@ export const RescueRequestModal: React.FC<RescueRequestModalProps> = ({
         uploadedFileIds.push(fileId);
       }
 
-      await createPublicIncident({
+      const response = await createPublicIncident({
         incidentTypeCode: incidentTypeCode.trim(),
         reporterName: reporterName.trim(),
         reporterPhone: reporterPhone.trim(),
@@ -147,7 +145,7 @@ export const RescueRequestModal: React.FC<RescueRequestModalProps> = ({
         fileIds: uploadedFileIds,
       });
 
-      onSubmitted?.();
+      onSubmitted?.(response.trackingCode);
       onClose();
     } catch (error) {
       setSubmitError(

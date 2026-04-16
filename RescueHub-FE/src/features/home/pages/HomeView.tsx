@@ -4,7 +4,11 @@ import vietmapgl from "@vietmap/vietmap-gl-js/dist/vietmap-gl";
 import "@vietmap/vietmap-gl-js/dist/vietmap-gl.css";
 import { LifeBuoy, LocateFixed, MapPin, Phone, Siren } from "lucide-react";
 import { ConfirmationModal } from "../../../shared/components/ConfirmationModal";
-import { getPublicBootstrap } from "../../../shared/services/publicApi";
+import {
+  createPublicSos,
+  getPublicBootstrap,
+  getPublicMapData,
+} from "../../../shared/services/publicApi";
 import { RescueRequestModal } from "../components/RescueRequestModal";
 import { ReliefRequestModal } from "../components/ReliefRequestModal";
 import { SyncModal } from "../components/SyncModal";
@@ -207,38 +211,15 @@ export const HomeView: React.FC = () => {
   }, [locationStatus]);
 
   useEffect(() => {
-    const controller = new AbortController();
-
     const loadNearbyReliefPoints = async () => {
       try {
-        const query = new URLSearchParams({
-          lat: location.lat.toString(),
-          lng: location.lng.toString(),
-          radiusKm: "5",
-        });
-
-        const response = await fetch(
-          `/api/v1/public/map-data?${query.toString()}`,
-          {
-            signal: controller.signal,
-          },
-        );
-
-        if (!response.ok) {
-          return;
-        }
-
-        const payload = (await response.json()) as {
-          data?: { markers?: unknown[] };
-          Data?: { markers?: unknown[] };
-        };
-        const mapData = payload.data ?? payload.Data;
+        const mapData = await getPublicMapData(location.lat, location.lng, 5);
         const markers = Array.isArray(mapData?.markers) ? mapData.markers : [];
 
         const parsedMarkers: ReliefPoint[] = markers
-          .filter((marker: any) => marker?.markerType === "RELIEF_POINT")
-          .map((marker: any) => ({
-            id: String(marker.id ?? Math.random()),
+          .filter((marker) => marker?.markerType === "RELIEF_POINT")
+          .map((marker) => ({
+            id: String(marker.id),
             title: String(marker.title ?? "Điểm cứu trợ"),
             addressText: String(
               marker.position?.addressText ?? "Chưa có địa chỉ",
@@ -260,10 +241,6 @@ export const HomeView: React.FC = () => {
     };
 
     void loadNearbyReliefPoints();
-
-    return () => {
-      controller.abort();
-    };
   }, [location.lat, location.lng]);
 
   const handleFocusCurrentLocation = () => {
@@ -349,16 +326,24 @@ export const HomeView: React.FC = () => {
       setSosStatus("sending");
 
       try {
-        const response = await fetch("/api/v1/public/incidents/sos", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        const authSession = getAuthSession();
 
-        if (!response.ok) {
-          throw new Error("SOS request failed");
-        }
+        await createPublicSos({
+          incidentTypeCode: "FLOOD",
+          reporterName: authSession?.user?.displayName?.trim() || "Nguoi dan",
+          reporterPhone: authSession?.user?.phone?.trim() || "0900000000",
+          victimCountEstimate: 1,
+          hasInjured: false,
+          hasVulnerablePeople: false,
+          description: "SOS tu man hinh trang chu",
+          location: {
+            lat: location.lat,
+            lng: location.lng,
+            addressText: "",
+            landmark: "",
+          },
+          fileIds: [],
+        });
 
         setSosStatus("done");
       } catch {
@@ -571,7 +556,15 @@ export const HomeView: React.FC = () => {
           }
         }}
         defaultLocation={location}
-        onSubmitted={() => navigate("/confirmed")}
+        onSubmitted={(trackingCode) => {
+          const code = trackingCode?.trim();
+          if (!code) {
+            navigate("/track");
+            return;
+          }
+
+          navigate(`/track?code=${encodeURIComponent(code)}`);
+        }}
       />
 
       <ReliefRequestModal
