@@ -125,25 +125,36 @@ export const MapView: React.FC<MapViewProps> = ({
 
     try {
       const statusCodeMap: Record<MissionStatus, string> = {
-        "Chờ nhận": "PENDING",
+        "Chờ nhận": "DEPART",
         "Đã tới hiện trường": "ARRIVED",
-        "Đang xử lý": "ON_SCENE",
-        "Đã hoàn tất": "COMPLETED",
-        "Tạm dừng": "PAUSED",
+        "Đang xử lý": "START_RESCUE",
+        "Đã hoàn tất": "COMPLETE",
+        "Tạm dừng": "ABORTED",
       };
 
-      const actionCode = statusCodeMap[reportStatus] || "ON_SCENE";
+      const actionCode = statusCodeMap[reportStatus] || "START_RESCUE";
 
-      await updateMissionStatus(selectedMission.id, {
+      console.log("[MapView] Gửi cập nhật nhiệm vụ:", {
+        missionId: selectedMission.id,
+        reportStatus,
         actionCode,
-        notes: reportText,
+        note: reportText,
       });
 
+      const response = await updateMissionStatus(selectedMission.id, {
+        actionCode,
+        note: reportText,
+      });
+
+      console.log("[MapView] Phản hồi từ server:", response);
       onSubmitReport(reportStatus, reportText);
       setReportText("");
     } catch (error) {
+      console.error("[MapView] Lỗi cập nhật nhiệm vụ:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Gửi cập nhật thất bại";
+        error instanceof Error
+          ? error.message
+          : "Gửi cập nhật thất bại. Vui lòng kiểm tra lại.";
       setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);

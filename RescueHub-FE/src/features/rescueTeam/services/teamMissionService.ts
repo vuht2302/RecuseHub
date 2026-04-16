@@ -136,12 +136,13 @@ export const getTeamMissionDetail = async (
 
 export interface UpdateMissionStatusRequest {
   actionCode: string;
-  notes: string;
+  note?: string;
 }
 
 export interface UpdateMissionStatusResponse {
   missionId: string;
-  message: string;
+  actionCode: string;
+  updatedAt: string;
 }
 
 const requestTeamApiWithBody = async <T>(
@@ -183,7 +184,7 @@ export const updateMissionStatus = async (
     "POST",
     {
       actionCode: request.actionCode,
-      notes: request.notes,
+      note: request.note,
     },
   );
 };
