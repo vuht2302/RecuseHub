@@ -5,6 +5,7 @@ COPY RescueHub.sln ./
 COPY src/RescueHub.Api/RescueHub.Api.csproj src/RescueHub.Api/
 COPY src/RescueHub.BuildingBlocks/RescueHub.BuildingBlocks.csproj src/RescueHub.BuildingBlocks/
 COPY src/RescueHub.Modules.Auth/RescueHub.Modules.Auth.csproj src/RescueHub.Modules.Auth/
+COPY src/RescueHub.Modules.Admin/RescueHub.Modules.Admin.csproj src/RescueHub.Modules.Admin/
 COPY src/RescueHub.Modules.Public/RescueHub.Modules.Public.csproj src/RescueHub.Modules.Public/
 COPY src/RescueHub.Modules.MasterData/RescueHub.Modules.MasterData.csproj src/RescueHub.Modules.MasterData/
 COPY src/RescueHub.Modules.Incidents/RescueHub.Modules.Incidents.csproj src/RescueHub.Modules.Incidents/
