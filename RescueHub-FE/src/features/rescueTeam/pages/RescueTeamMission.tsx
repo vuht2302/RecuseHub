@@ -112,7 +112,7 @@ const teamMembers: TeamMember[] = [
 
 const statusStyles: Record<MissionStatus, string> = {
   "Chờ nhận": "bg-surface-container-high text-on-surface-variant",
-  "Đang di chuyển": "bg-blue-950/10 text-blue-950",
+  "Đã tới hiện trường": "bg-blue-950/10 text-blue-950",
   "Đang xử lý": "bg-amber-100 text-amber-800",
   "Đã hoàn tất": "bg-emerald-100 text-emerald-700",
   "Tạm dừng": "bg-error-container text-error",
@@ -137,7 +137,7 @@ export const RescueTeamMission: React.FC = () => {
   const [selectedMissionId, setSelectedMissionId] = useState(missions[0].id);
   const [statusMap, setStatusMap] = useState<Record<string, MissionStatus>>({
     "rg-4492-d": "Chờ nhận",
-    "rg-4510-b": "Đang di chuyển",
+    "rg-4510-b": "Đã tới hiện trường",
     "rg-4522-a": "Chờ nhận",
   });
   const [logs, setLogs] = useState<MissionLog[]>([
@@ -242,7 +242,7 @@ export const RescueTeamMission: React.FC = () => {
     sourceMissions[0];
 
   const handleAcceptMission = (missionId: string) => {
-    setStatusMap((prev) => ({ ...prev, [missionId]: "Đang di chuyển" }));
+    setStatusMap((prev) => ({ ...prev, [missionId]: "Đã tới hiện trường" }));
     setLogs((prev) => [
       ...prev,
       {
@@ -379,7 +379,7 @@ export const RescueTeamMission: React.FC = () => {
               onAcceptMission={(missionId) => {
                 handleAcceptMission(missionId);
                 setSelectedMissionId(missionId);
-                setReportStatus("Đang di chuyển");
+                setReportStatus("Đã tới hiện trường");
                 setActiveMenu("map");
               }}
               onViewMission={handleViewMission}

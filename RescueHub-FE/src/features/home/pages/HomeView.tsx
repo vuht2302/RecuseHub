@@ -419,18 +419,22 @@ export const HomeView: React.FC = () => {
           </div>
         </div>
 
-        <div className="absolute bottom-5 right-5 z-30 flex flex-col items-end gap-3">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
           <button
             onClick={handleSosClick}
-            className="w-16 h-16 cursor-pointer rounded-full bg-gradient-to-br from-error to-red-700 text-white shadow-2xl flex items-center justify-center hover:opacity-95 active:scale-95 transition-all sos-shake"
+            className="w-24 h-24 md:w-28 md:h-28 cursor-pointer rounded-full bg-gradient-to-br from-error to-red-700 text-white shadow-2xl flex items-center justify-center hover:opacity-95 active:scale-95 transition-all sos-shake"
             aria-label="Gửi SOS khẩn cấp"
             title="SOS khẩn cấp"
           >
             <span className="absolute inset-0 rounded-full bg-red-500/35 animate-ping" />
-            <span className="absolute inset-0 rounded-full border-2 border-white/70 sos-ring" />
-            <span className="relative z-10 font-black text-sm">SOS</span>
+            <span className="absolute inset-0 rounded-full border-[3px] border-white/70 sos-ring" />
+            <span className="relative z-10 font-black text-xl md:text-2xl">
+              SOS
+            </span>
           </button>
+        </div>
 
+        <div className="absolute bottom-5 right-5 z-30 flex flex-col items-end gap-3">
           <button
             onClick={() => setIsRequestModalOpen(true)}
             className="w-14 h-14 rounded-full cursor-pointer bg-primary text-on-primary shadow-2xl flex items-center justify-center hover:opacity-90 active:scale-95 transition-all "
@@ -465,7 +469,7 @@ export const HomeView: React.FC = () => {
 
         {(sosStatus === "done" || sosStatus === "error") && (
           <div
-            className={`absolute bottom-24 left-1/2 -translate-x-1/2 z-20 rounded-xl px-4 py-3 text-sm font-semibold border shadow-lg max-w-[420px] text-center ${
+            className={`absolute bottom-36 left-1/2 -translate-x-1/2 z-20 rounded-xl px-4 py-3 text-sm font-semibold border shadow-lg max-w-[420px] text-center ${
               sosStatus === "done"
                 ? "bg-green-50 text-green-700 border-green-200"
                 : "bg-red-50 text-red-700 border-red-200"
