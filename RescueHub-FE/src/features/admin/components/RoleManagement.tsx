@@ -1,51 +1,83 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import RoleModal from "./RoleModal";
 
-const initialRoles = [
-  {
-    id: "R1",
-    name: "Admin",
-    permissions: {
-      users: ["view", "create", "edit", "delete"],
-      requests: ["view", "verify", "dispatch"],
-      teams: ["view", "assign"],
-      reports: ["view"],
-    },
-  },
-  {
-    id: "R2",
-    name: "Coordinator",
-    permissions: {
-      users: ["view"],
-      requests: ["view", "verify", "dispatch"],
-      teams: ["view", "assign"],
-      reports: ["view"],
-    },
-  },
-];
+import {
+  getRoles,
+  createRole,
+  updateRole,
+  deleteRole,
+} from "@/src/shared/services/role.service";
 
 const RoleManagement = () => {
-  const [roles, setRoles] = useState(initialRoles);
+  const [roles, setRoles] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [editingRole, setEditingRole] = useState(null);
+  const [editingRole, setEditingRole] = useState<any>(null);
+
+  const [loading, setLoading] = useState(false);
+
+  // ===== LOAD DATA =====
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await getRoles();
+      setRoles(res.items);
+    } catch (err) {
+      console.error(err);
+      alert("Load role thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // ===== ADD =====
-  const handleAdd = (data) => {
-    setRoles((prev) => [...prev, { ...data, id: "R" + Date.now() }]);
+  const handleAdd = async (data: any) => {
+    try {
+      await createRole({
+        code: data.code,
+        name: data.name,
+        description: data.description,
+      });
+
+      await fetchData();
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   // ===== EDIT =====
-  const handleEdit = (data) => {
-    setRoles((prev) =>
-      prev.map((r) => (r.id === data.id ? data : r))
-    );
+  const handleEdit = async (data: any) => {
+    try {
+      await updateRole(data.id, {
+        code: data.code,
+        name: data.name,
+        description: data.description,
+      });
+
+      await fetchData();
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   // ===== DELETE =====
-  const handleDelete = (id) => {
+  const handleDelete = async (role: any) => {
+    if (role.assignedUserCount > 0) {
+      alert("Role đang được sử dụng, không thể xoá");
+      return;
+    }
+
     if (confirm("Xoá role này?")) {
-      setRoles((prev) => prev.filter((r) => r.id !== id));
+      try {
+        await deleteRole(role.id);
+        await fetchData();
+      } catch (err: any) {
+        alert(err.message);
+      }
     }
   };
 
@@ -67,42 +99,48 @@ const RoleManagement = () => {
 
       {/* LIST */}
       <div className="grid grid-cols-2 gap-4">
-        {roles.map((role) => (
-          <div
-            key={role.id}
-            className="bg-white p-4 rounded-xl shadow space-y-3"
-          >
-            <div className="flex justify-between items-center">
-              <h3 className="font-bold">{role.name}</h3>
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          roles.map((role) => (
+            <div
+              key={role.id}
+              className="bg-white p-4 rounded-xl shadow space-y-3"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold">{role.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    {role.code}
+                  </p>
+                </div>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setEditingRole(role);
-                    setShowModal(true);
-                  }}
-                >
-                  <Edit size={18} />
-                </button>
-                <button onClick={() => handleDelete(role.id)}>
-                  <Trash2 size={18} className="text-red-500" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditingRole(role);
+                      setShowModal(true);
+                    }}
+                  >
+                    <Edit size={18} />
+                  </button>
+
+                  <button onClick={() => handleDelete(role)}>
+                    <Trash2 size={18} className="text-red-500" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-sm text-gray-600">
+                {role.description || "Không có mô tả"}
+              </div>
+
+              <div className="text-xs text-gray-400">
+                Số user: {role.assignedUserCount}
               </div>
             </div>
-
-            {/* Permissions */}
-            <div className="text-sm text-gray-600 space-y-1">
-              {Object.entries(role.permissions).map(
-                ([module, perms]) => (
-                  <div key={module}>
-                    <strong className="capitalize">{module}: </strong>
-                    {perms.join(", ")}
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* MODAL */}

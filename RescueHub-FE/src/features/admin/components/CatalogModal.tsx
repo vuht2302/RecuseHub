@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const RoleModal = ({ onClose, onSubmit, defaultData }) => {
+const CatalogModal = ({ onClose, onSubmit, defaultData }) => {
   const [form, setForm] = useState(
     defaultData
       ? {
@@ -30,12 +30,12 @@ const RoleModal = ({ onClose, onSubmit, defaultData }) => {
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
       <div className="bg-white p-6 rounded-xl w-[400px] space-y-4">
         <h2 className="text-xl font-bold">
-          {defaultData ? "Sửa role" : "Thêm role"}
+          {defaultData ? "Sửa danh mục" : "Thêm danh mục"}
         </h2>
 
         {/* CODE */}
         <input
-          placeholder="Code (VD: ADMIN)"
+          placeholder="Code"
           value={form.code}
           disabled={!!defaultData}
           onChange={(e) =>
@@ -46,7 +46,7 @@ const RoleModal = ({ onClose, onSubmit, defaultData }) => {
 
         {/* NAME */}
         <input
-          placeholder="Tên role"
+          placeholder="Tên"
           value={form.name}
           onChange={(e) =>
             setForm({ ...form, name: e.target.value })
@@ -81,4 +81,4 @@ const RoleModal = ({ onClose, onSubmit, defaultData }) => {
   );
 };
 
-export default RoleModal;
+export default CatalogModal;

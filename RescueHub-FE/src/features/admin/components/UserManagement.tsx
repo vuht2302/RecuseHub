@@ -1,59 +1,93 @@
-import React, { useState } from "react";
-import { Search, Plus, Edit, Trash2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Plus, Edit, Trash2 } from "lucide-react";
 import UserModal from "./UserModal";
+import { createUser, getUsers, updateUser } from "@/src/shared/services/adminUser.service";
+import { getRoles } from "@/src/shared/services/role.service";
 
-// ===== DATA FAKE =====
-const initialUsers = [
-  {
-    id: "U001",
-    name: "Nguyễn Văn An",
-    email: "an@gmail.com",
-    role: "Admin",
-    status: "active",
-  },
-  {
-    id: "U002",
-    name: "Trần Thị Bình",
-    email: "binh@gmail.com",
-    role: "Coordinator",
-    status: "active",
-  },
-];
+
+
+// helper
+const getUserRoleText = (roles: any[]) => {
+  if (!roles || roles.length === 0) return "Không có";
+  return roles.map((r) => r.name).join(", ");
+};
 
 const UserManagement = () => {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
   const [showModal, setShowModal] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+  const [editingUser, setEditingUser] = useState<any>(null);
+
+  const [loading, setLoading] = useState(false);
+
+  // ===== LOAD DATA =====
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      const userRes = await getUsers();
+      const roleRes = await getRoles();
+
+      setUsers(userRes.items);
+      setRoles(roleRes.items);
+    } catch (err) {
+      console.error(err);
+      alert("Load dữ liệu thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // ===== FILTER =====
   const filteredUsers = users.filter(
     (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) &&
-      (roleFilter === "all" || u.role === roleFilter)
+      u.displayName.toLowerCase().includes(search.toLowerCase()) &&
+      (roleFilter === "all" ||
+        u.roles.some((r: any) => r.code === roleFilter))
   );
 
   // ===== ADD USER =====
-  const handleAdd = (data) => {
-    setUsers((prev) => [
-      ...prev,
-      { ...data, id: "U" + Date.now() },
-    ]);
+  const handleAdd = async (data: any) => {
+    try {
+      await createUser({
+        username: data.username,
+        displayName: data.displayName,
+        phone: data.phone,
+        email: data.email,
+        password: data.password,
+        isActive: data.status === "active",
+        roleCodes: [data.role],
+      });
+
+      await fetchData();
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   // ===== EDIT USER =====
-  const handleEdit = (data) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === data.id ? data : u))
-    );
-  };
+  const handleEdit = async (data: any) => {
+    try {
+      await updateUser(data.id, {
+        username: data.username, 
+        displayName: data.displayName,
+        phone: data.phone,
+        email: data.email,
+        isActive: data.status === "active",
+        roleCodes: [data.role],
+      });
 
-  // ===== DELETE =====
-  const handleDelete = (id) => {
-    if (confirm("Bạn có chắc muốn xoá?")) {
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+      await fetchData();
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
@@ -81,66 +115,77 @@ const UserManagement = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="border px-3 py-2 rounded"
         />
+
         <select
           onChange={(e) => setRoleFilter(e.target.value)}
           className="border px-3 py-2 rounded"
         >
           <option value="all">All</option>
-          <option value="Admin">Admin</option>
-          <option value="Coordinator">Coordinator</option>
+          {roles.map((r) => (
+            <option key={r.code} value={r.code}>
+              {r.name}
+            </option>
+          ))}
         </select>
       </div>
 
       {/* TABLE */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3">ID</th>
-              <th className="p-3">Tên</th>
-              <th className="p-3">Email</th>
-              <th className="p-3">Role</th>
-              <th className="p-3">Trạng thái</th>
-              <th className="p-3 text-center">Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredUsers.map((u) => (
-              <tr key={u.id} className="border-t text-center">
-                <td>{u.id}</td>
-                <td>{u.name}</td>
-                <td>{u.email}</td>
-                <td>{u.role}</td>
-                <td>
-                  {u.status === "active" ? "Hoạt động" : "Ngưng"}
-                </td>
-                <td className="flex justify-center gap-3 py-2">
-                  <button
-                    onClick={() => {
-                      setEditingUser(u);
-                      setShowModal(true);
-                    }}
-                  >
-                    <Edit size={18} />
-                  </button>
-
-                  <button onClick={() => handleDelete(u.id)}>
-                    <Trash2 size={18} className="text-red-500" />
-                  </button>
-                </td>
+        {loading ? (
+          <div className="p-4">Loading...</div>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-3">Username</th>
+                <th className="p-3">Tên</th>
+                <th className="p-3">Email</th>
+                <th className="p-3">Role</th>
+                <th className="p-3">Trạng thái</th>
+                <th className="p-3 text-center">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {filteredUsers.map((u) => (
+                <tr key={u.id} className="border-t text-center">
+                  <td>{u.username}</td>
+                  <td>{u.displayName}</td>
+                  <td>{u.email}</td>
+                  <td>{getUserRoleText(u.roles)}</td>
+                  <td>
+                    {u.isActive ? "Hoạt động" : "Ngưng"}
+                  </td>
+
+                  <td className="flex justify-center gap-3 py-2">
+                    <button
+                      onClick={() => {
+                        setEditingUser(u);
+                        setShowModal(true);
+                      }}
+                    >
+                      <Edit size={18} />
+                    </button>
+
+                    {/* API chưa có delete nên tạm ẩn */}
+                    {/* <button>
+                      <Trash2 size={18} className="text-red-500" />
+                    </button> */}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* MODAL */}
       {showModal && (
         <UserModal
+          roles={roles}
+          defaultData={editingUser}
           onClose={() => setShowModal(false)}
           onSubmit={editingUser ? handleEdit : handleAdd}
-          defaultData={editingUser}
         />
       )}
     </div>
