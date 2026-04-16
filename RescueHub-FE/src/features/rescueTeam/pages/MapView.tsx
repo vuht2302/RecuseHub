@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from "react";
 import vietmapgl from "@vietmap/vietmap-gl-js/dist/vietmap-gl";
 import "@vietmap/vietmap-gl-js/dist/vietmap-gl.css";
-import { MapPin, UserRound, Phone, Users } from "lucide-react";
+import { MapPin, UserRound, Phone, Users, AlertCircle } from "lucide-react";
 import { Mission, MissionStatus, MissionLog } from "../types/mission";
+import { updateMissionStatus } from "../services/teamMissionService";
 interface MapViewProps {
   selectedMission: Mission;
   statusMap: Record<string, MissionStatus>;
@@ -29,6 +30,8 @@ export const MapView: React.FC<MapViewProps> = ({
   const mapRef = useRef<vietmapgl.Map | null>(null);
   const markersRef = useRef<vietmapgl.Marker[]>([]);
   const [reportText, setReportText] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   const vietmapApiKey = (import.meta.env.VITE_VIETMAP_API_KEY ?? "").trim();
   const hasVietmapKey = vietmapApiKey.length > 0;
@@ -109,13 +112,53 @@ export const MapView: React.FC<MapViewProps> = ({
     .slice()
     .reverse();
 
-  const handleSubmitReport = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitReport = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     if (!reportText.trim()) {
       return;
     }
-    onSubmitReport(reportStatus, reportText);
-    setReportText("");
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const statusCodeMap: Record<MissionStatus, string> = {
+        "Chờ nhận": "DEPART",
+        "Đã tới hiện trường": "ARRIVED",
+        "Đang xử lý": "START_RESCUE",
+        "Đã hoàn tất": "COMPLETE",
+        "Tạm dừng": "ABORTED",
+      };
+
+      const actionCode = statusCodeMap[reportStatus] || "START_RESCUE";
+
+      console.log("[MapView] Gửi cập nhật nhiệm vụ:", {
+        missionId: selectedMission.id,
+        reportStatus,
+        actionCode,
+        note: reportText,
+      });
+
+      const response = await updateMissionStatus(selectedMission.id, {
+        actionCode,
+        note: reportText,
+      });
+
+      console.log("[MapView] Phản hồi từ server:", response);
+      onSubmitReport(reportStatus, reportText);
+      setReportText("");
+    } catch (error) {
+      console.error("[MapView] Lỗi cập nhật nhiệm vụ:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Gửi cập nhật thất bại. Vui lòng kiểm tra lại.";
+      setSubmitError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -207,6 +250,16 @@ export const MapView: React.FC<MapViewProps> = ({
             Cập nhật trạng thái và báo cáo kết quả
           </h3>
 
+          {submitError && (
+            <div className="rounded-lg bg-red-50 border border-red-200 p-3 flex items-start gap-2">
+              <AlertCircle
+                size={16}
+                className="text-red-600 mt-0.5 flex-shrink-0"
+              />
+              <p className="text-xs text-red-700">{submitError}</p>
+            </div>
+          )}
+
           <label className="block text-xs font-semibold text-on-surface-variant">
             Trạng thái thực hiện
             <select
@@ -236,9 +289,10 @@ export const MapView: React.FC<MapViewProps> = ({
 
           <button
             type="submit"
-            className="w-full rounded-xl bg-[#007399] hover:bg-[#006483] text-white py-3 font-black font-primary text-lg shadow-md"
+            disabled={isSubmitting}
+            className="w-full rounded-xl bg-[#007399] hover:bg-[#006483] disabled:bg-slate-400 text-white py-3 font-black font-primary text-lg shadow-md transition-colors"
           >
-            Gửi cập nhật cứu hộ
+            {isSubmitting ? "Đang gửi..." : "Gửi cập nhật cứu hộ"}
           </button>
         </form>
 

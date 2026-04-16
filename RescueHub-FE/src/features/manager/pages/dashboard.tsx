@@ -29,6 +29,10 @@ import {
   Eye,
 } from "lucide-react";
 import { useManager } from "../../../shared/context/ManagerContext";
+import { RescueEventSection } from "../components/RescueEventSection";
+import { InventorySection } from "../components/InventorySection";
+import { ImportExportSection } from "../components/ImportExportSection";
+import { ExpirySection } from "../components/ExpirySection";
 
 type KPI = {
   title: string;
@@ -498,7 +502,7 @@ function HCMMap() {
         fill="#1e293b"
         fontFamily="var(--font-primary)"
       >
-        HCM Service Coverage
+        Khu vực hoạt động
       </text>
 
       {/* Legend */}
@@ -929,925 +933,6 @@ function StatisticsChart() {
   );
 }
 
-// Inventory Management Section Component
-function RescueEventSection() {
-  const [events] = useState<RescueEvent[]>([
-    {
-      id: "EV001",
-      name: "Cứu hộ lũ lụt khu vực Tây Nam",
-      description: "Cứu hộ công dân bị nước lũ cô lập ở các xã biên",
-      date: "2026-04-18",
-      startTime: "06:00",
-      endTime: "18:00",
-      location: "Xã An Phú, Huyện An Phu, An Giang",
-      latitude: 10.3031,
-      longitude: 104.7795,
-      type: "evacuation",
-      priority: "critical",
-      status: "ongoing",
-      team: "Đội cứu hộ miền Tây",
-      requiredResources: ["Thuyền cứu hộ", "Áo phao", "Dây cứu", "Y tế"],
-      budget: "₫450,000,000",
-      createdAt: "2026-04-17 14:30",
-      createdBy: "Manager",
-    },
-    {
-      id: "EV002",
-      name: "Triển khai cứu trợ vùng sạt lở đất",
-      description: "Cứu trợ nhân đạo và tái định cư sau thảm họa sạt lở",
-      date: "2026-04-20",
-      startTime: "08:00",
-      endTime: "17:00",
-      location: "Huyện Bắc Trà My, Quảng Nam",
-      latitude: 15.4333,
-      longitude: 108.5667,
-      type: "relief",
-      priority: "high",
-      status: "planning",
-      team: "Đội cứu trợ miền Trung",
-      requiredResources: ["Lương thực", "Nước sạch", "Y tế", "Nơi trú ẩn tạm"],
-      budget: "₫230,000,000",
-      createdAt: "2026-04-16 10:15",
-      createdBy: "Manager",
-    },
-    {
-      id: "EV003",
-      name: "Hỗ trợ y tế khẩn cấp sau tai nạn giao thông",
-      description: "Quản lý và hỗ trợ y tế cho nạn nhân tai nạn xe",
-      date: "2026-04-19",
-      startTime: "14:00",
-      endTime: "20:00",
-      location: "Đại lộ Thăng Long, Hà Nội",
-      latitude: 21.0285,
-      longitude: 105.8581,
-      type: "medical",
-      priority: "high",
-      status: "completed",
-      team: "Đội y tế khẩn cấp",
-      requiredResources: ["Xe cứu thương", "Thuốc", "Dụng cụ y tế"],
-      budget: "₫85,000,000",
-      createdAt: "2026-04-18 13:45",
-      createdBy: "Manager",
-    },
-  ]);
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    date: "",
-    startTime: "08:00",
-    endTime: "17:00",
-    location: "",
-    type: "relief",
-    priority: "medium",
-    team: "",
-    budget: "",
-  });
-
-  const getEventTypeLabel = (type: string) => {
-    const labels: { [key: string]: string } = {
-      relief: "Cứu trợ",
-      rescue: "Cứu hộ",
-      evacuation: "Sơ tán",
-      medical: "Y tế",
-      other: "Khác",
-    };
-    return labels[type] || type;
-  };
-
-  const getEventTypeColor = (type: string) => {
-    switch (type) {
-      case "relief":
-        return "bg-green-50 text-green-600 border-green-200";
-      case "rescue":
-        return "bg-blue-50 text-blue-600 border-blue-200";
-      case "evacuation":
-        return "bg-orange-50 text-orange-600 border-orange-200";
-      case "medical":
-        return "bg-red-50 text-red-600 border-red-200";
-      default:
-        return "bg-slate-50 text-slate-600 border-slate-200";
-    }
-  };
-
-  const getPriorityLabel = (priority: string) => {
-    const labels: { [key: string]: string } = {
-      low: "Thấp",
-      medium: "Trung bình",
-      high: "Cao",
-      critical: "Rất cao",
-    };
-    return labels[priority] || priority;
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "low":
-        return "bg-blue-50 text-blue-600";
-      case "medium":
-        return "bg-yellow-50 text-yellow-600";
-      case "high":
-        return "bg-orange-50 text-orange-600";
-      case "critical":
-        return "bg-red-50 text-red-600";
-      default:
-        return "bg-slate-50 text-slate-600";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels: { [key: string]: string } = {
-      planning: "Lên kế hoạch",
-      ongoing: "Đang triển khai",
-      completed: "Hoàn tất",
-      cancelled: "Hủy bỏ",
-    };
-    return labels[status] || status;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "planning":
-        return "bg-slate-50 text-slate-600";
-      case "ongoing":
-        return "bg-blue-50 text-blue-600";
-      case "completed":
-        return "bg-emerald-50 text-emerald-600";
-      case "cancelled":
-        return "bg-red-50 text-red-600";
-      default:
-        return "bg-slate-50 text-slate-600";
-    }
-  };
-
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleCreateEvent = () => {
-    // Validation
-    if (
-      !formData.name ||
-      !formData.date ||
-      !formData.location ||
-      !formData.team
-    ) {
-      alert("Vui lòng điền đầy đủ các trường bắt buộc");
-      return;
-    }
-    // Reset form
-    setFormData({
-      name: "",
-      description: "",
-      date: "",
-      startTime: "08:00",
-      endTime: "17:00",
-      location: "",
-      type: "relief",
-      priority: "medium",
-      team: "",
-      budget: "",
-    });
-    setShowForm(false);
-    alert("Sự kiện đã được tạo thành công!");
-  };
-
-  return (
-    <section className="space-y-6">
-      {/* Create Event Button */}
-      {!showForm ? (
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded-lg px-6 py-3 text-sm font-medium text-white transition"
-          style={{ backgroundColor: "var(--color-blue-950)" }}
-        >
-          + Tạo sự kiện cứu trợ mới
-        </button>
-      ) : (
-        <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-6 flex items-center justify-between">
-            <h3
-              className="text-xl font-bold text-slate-900"
-              style={{ fontFamily: "var(--font-primary)" }}
-            >
-              Tạo sự kiện cứu trợ
-            </h3>
-            <button
-              onClick={() => setShowForm(false)}
-              className="text-slate-400 transition hover:text-slate-600"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {/* Event Name */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Tên sự kiện *
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Ví dụ: Cứu hộ lũ lụt khu vực..."
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Mô tả chi tiết
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Mô tả về sự kiện, mục đích, và kế hoạch"
-                rows={3}
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Date */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Ngày tổ chức *
-              </label>
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Start Time */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Giờ bắt đầu
-              </label>
-              <input
-                type="time"
-                name="startTime"
-                value={formData.startTime}
-                onChange={handleInputChange}
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* End Time */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Giờ kết thúc
-              </label>
-              <input
-                type="time"
-                name="endTime"
-                value={formData.endTime}
-                onChange={handleInputChange}
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Location */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Địa điểm *
-              </label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                placeholder="Địa chỉ chi tiết khu vực triển khai"
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Event Type */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Loại sự kiện
-              </label>
-              <select
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="relief">Cứu trợ</option>
-                <option value="rescue">Cứu hộ</option>
-                <option value="evacuation">Sơ tán</option>
-                <option value="medical">Y tế</option>
-                <option value="other">Khác</option>
-              </select>
-            </div>
-
-            {/* Priority */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Độ ưu tiên
-              </label>
-              <select
-                name="priority"
-                value={formData.priority}
-                onChange={handleInputChange}
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="low">Thấp</option>
-                <option value="medium">Trung bình</option>
-                <option value="high">Cao</option>
-                <option value="critical">Rất cao</option>
-              </select>
-            </div>
-
-            {/* Team */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Đội phụ trách *
-              </label>
-              <input
-                type="text"
-                name="team"
-                value={formData.team}
-                onChange={handleInputChange}
-                placeholder="Ví dụ: Đội cứu hộ miền Tây"
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Budget */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Ngân sách dự kiến
-              </label>
-              <input
-                type="text"
-                name="budget"
-                value={formData.budget}
-                onChange={handleInputChange}
-                placeholder="Ví dụ: ₫450,000,000"
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Form Actions */}
-          <div className="mt-6 flex gap-3">
-            <button
-              onClick={handleCreateEvent}
-              className="rounded-lg px-6 py-2 text-sm font-medium text-white transition"
-              style={{ backgroundColor: "var(--color-blue-950)" }}
-            >
-              Tạo sự kiện
-            </button>
-            <button
-              onClick={() => setShowForm(false)}
-              className="rounded-lg border border-slate-200 bg-white px-6 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-50"
-            >
-              Hủy
-            </button>
-          </div>
-        </article>
-      )}
-
-      {/* Events List */}
-      <article className="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 p-6">
-          <h3
-            className="text-xl font-bold text-slate-900"
-            style={{ fontFamily: "var(--font-primary)" }}
-          >
-            Danh sách sự kiện cứu trợ
-          </h3>
-          <p className="mt-1 text-sm text-slate-600">
-            Tổng {events.length} sự kiện đang quản lý
-          </p>
-        </div>
-
-        <div className="divide-y divide-slate-200">
-          {events.map((event) => (
-            <div key={event.id} className="p-6 hover:bg-slate-50 transition">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h4 className="font-bold text-slate-900">{event.name}</h4>
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold border ${getEventTypeColor(
-                        event.type,
-                      )}`}
-                    >
-                      {getEventTypeLabel(event.type)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-600 mb-2">
-                    {event.description}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 md:grid-cols-4">
-                    <div>
-                      <span className="font-semibold">Ngày:</span> {event.date}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Giờ:</span>{" "}
-                      {event.startTime} - {event.endTime}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Địa điểm:</span>{" "}
-                      {event.location}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Đội:</span> {event.team}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 sm:items-end">
-                  <div className="flex gap-2">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getPriorityColor(
-                        event.priority,
-                      )}`}
-                    >
-                      {getPriorityLabel(event.priority)}
-                    </span>
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
-                        event.status,
-                      )}`}
-                    >
-                      {getStatusLabel(event.status)}
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    {event.budget}
-                  </p>
-                  <div className="flex gap-2">
-                    <button className="rounded-lg px-3 py-1.5 text-xs border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50">
-                      Chi tiết
-                    </button>
-                    <button className="rounded-lg px-3 py-1.5 text-xs border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50">
-                      Sửa
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </article>
-    </section>
-  );
-}
-
-// Inventory Management Section Component
-function InventorySection() {
-  const [inventoryItems] = useState([
-    {
-      id: "SKU001",
-      name: "Dây an toàn cứu hộ",
-      quantity: 45,
-      location: "A-1-3",
-      status: "In Stock",
-      lastRestocked: "2026-01-15",
-    },
-    {
-      id: "SKU002",
-      name: "Mũ bảo hiểm chuyên dụng",
-      quantity: 12,
-      location: "B-2-1",
-      status: "Low Stock",
-      lastRestocked: "2026-01-20",
-    },
-    {
-      id: "SKU003",
-      name: "Áo phao cứu sinh",
-      quantity: 0,
-      location: "C-1-2",
-      status: "Out of Stock",
-      lastRestocked: "2025-12-10",
-    },
-    {
-      id: "SKU004",
-      name: "Bộ cứu hộ di động",
-      quantity: 28,
-      location: "A-3-4",
-      status: "In Stock",
-      lastRestocked: "2026-01-18",
-    },
-    {
-      id: "SKU005",
-      name: "Dụng cụ cắt cứu hộ",
-      quantity: 8,
-      location: "B-1-5",
-      status: "Low Stock",
-      lastRestocked: "2026-01-22",
-    },
-    {
-      id: "SKU006",
-      name: "Đèn chiếu sáng chuyên dụng",
-      quantity: 35,
-      location: "D-2-3",
-      status: "In Stock",
-      lastRestocked: "2026-01-19",
-    },
-  ]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "In Stock":
-        return "bg-emerald-50 text-emerald-600";
-      case "Low Stock":
-        return "bg-orange-50 text-orange-600";
-      case "Out of Stock":
-        return "bg-red-50 text-red-600";
-      default:
-        return "bg-slate-50 text-slate-600";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "In Stock":
-        return <div className="h-2 w-2 rounded-full bg-emerald-600" />;
-      case "Low Stock":
-        return <AlertTriangle className="h-4 w-4 text-orange-600" />;
-      case "Out of Stock":
-        return <AlertTriangle className="h-4 w-4 text-red-600" />;
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <section className="space-y-6">
-      <header className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex min-w-[280px] flex-1 items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2">
-            <Search className="h-4 w-4 text-slate-400" />
-            <input
-              className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-              placeholder="Tìm kiếm sản phẩm, mã SKU..."
-              style={{ fontFamily: "var(--font-sans)" }}
-            />
-          </div>
-          <button
-            className="rounded-lg px-4 py-2 text-sm font-medium text-white transition"
-            style={{ backgroundColor: "var(--color-blue-950)" }}
-          >
-            + Thêm sản phẩm
-          </button>
-        </div>
-      </header>
-
-      <article className="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 p-6">
-          <h3
-            className="text-xl font-bold text-slate-900"
-            style={{ fontFamily: "var(--font-primary)" }}
-          >
-            Danh sách hàng hóa
-          </h3>
-          <p className="mt-1 text-sm text-slate-600">
-            Quản lý kho hàng hóa cứu hộ - tổng {inventoryItems.length} sản phẩm
-          </p>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                <th className="px-4 py-3">
-                  <input type="checkbox" className="rounded" />
-                </th>
-                <th className="px-4 py-3">Mã SKU</th>
-                <th className="px-4 py-3">Tên sản phẩm</th>
-                <th className="px-4 py-3">Số lượng</th>
-                <th className="px-4 py-3">Vị trí kho</th>
-                <th className="px-4 py-3">Trạng thái</th>
-                <th className="px-4 py-3">Cập nhật gần đây</th>
-                <th className="px-4 py-3">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventoryItems.map((item) => (
-                <tr
-                  key={item.id}
-                  className="border-b border-slate-100 transition hover:bg-slate-50"
-                >
-                  <td className="px-4 py-3">
-                    <input type="checkbox" className="rounded" />
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="font-semibold text-slate-900">{item.id}</p>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-900">
-                    {item.name}
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-sm font-semibold text-slate-900">
-                      {item.quantity} {item.quantity === 1 ? "cái" : "cái"}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-600">
-                    {item.location}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
-                        item.status,
-                      )}`}
-                    >
-                      {getStatusIcon(item.status)}
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-600">
-                    {item.lastRestocked}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100">
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </article>
-    </section>
-  );
-}
-
-// Import/Export Management Section
-function ImportExportSection() {
-  const [transactions] = useState([
-    {
-      id: "TRX001",
-      date: "2026-01-25",
-      type: "import",
-      supplier: "Công ty TNHH An Toàn Plus",
-      items: 15,
-      quantity: 120,
-      status: "Hoàn tất",
-    },
-    {
-      id: "TRX002",
-      date: "2026-01-23",
-      type: "import",
-      supplier: "Công ty Cứu Hộ Việt",
-      items: 8,
-      quantity: 85,
-      status: "Đang xử lý",
-    },
-    {
-      id: "TRX003",
-      date: "2026-01-20",
-      type: "export",
-      supplier: "Chi nhánh Quận 1",
-      items: 12,
-      quantity: 95,
-      status: "Hoàn tất",
-    },
-    {
-      id: "TRX004",
-      date: "2026-01-18",
-      type: "import",
-      supplier: "Công ty Thiết bị Cứu hộ Toàn Cầu",
-      items: 20,
-      quantity: 150,
-      status: "Chờ xác nhận",
-    },
-  ]);
-
-  return (
-    <section className="space-y-6">
-      <header className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex min-w-[280px] flex-1 items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2">
-            <Search className="h-4 w-4 text-slate-400" />
-            <input
-              className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-              placeholder="Tìm kiếm mã vụ, nhà cung cấp..."
-              style={{ fontFamily: "var(--font-sans)" }}
-            />
-          </div>
-          <button
-            className="rounded-lg px-4 py-2 text-sm font-medium text-white transition"
-            style={{ backgroundColor: "var(--color-blue-950)" }}
-          >
-            + Yêu cầu mới
-          </button>
-        </div>
-      </header>
-
-      <article className="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 p-6">
-          <h3
-            className="text-xl font-bold text-slate-900"
-            style={{ fontFamily: "var(--font-primary)" }}
-          >
-            Lịch sử giao dịch
-          </h3>
-          <p className="mt-1 text-sm text-slate-600">
-            Nhập/xuất kho - {transactions.length} giao dịch gần đây
-          </p>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                <th className="px-4 py-3">Mã giao dịch</th>
-                <th className="px-4 py-3">Ngày</th>
-                <th className="px-4 py-3">Loại</th>
-                <th className="px-4 py-3">Đối tác</th>
-                <th className="px-4 py-3">Số mục</th>
-                <th className="px-4 py-3">Số lượng</th>
-                <th className="px-4 py-3">Trạng thái</th>
-                <th className="px-4 py-3">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((txn) => (
-                <tr
-                  key={txn.id}
-                  className="border-b border-slate-100 transition hover:bg-slate-50"
-                >
-                  <td className="px-4 py-3">
-                    <p className="font-semibold text-slate-900">{txn.id}</p>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-600">
-                    {txn.date}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                        txn.type === "import"
-                          ? "bg-emerald-50 text-emerald-600"
-                          : "bg-blue-50 text-blue-600"
-                      }`}
-                    >
-                      {txn.type === "import" ? "Nhập kho" : "Xuất kho"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-900">
-                    {txn.supplier}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-600">
-                    {txn.items}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-slate-900">
-                    {txn.quantity}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                        txn.status === "Hoàn tất"
-                          ? "bg-emerald-50 text-emerald-600"
-                          : txn.status === "Đang xử lý"
-                            ? "bg-blue-50 text-blue-600"
-                            : "bg-orange-50 text-orange-600"
-                      }`}
-                    >
-                      {txn.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100">
-                      <Eye className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </article>
-    </section>
-  );
-}
-
-// Expiry Management Section
-function ExpirySection() {
-  const [expiryItems] = useState([
-    {
-      id: "EXP001",
-      name: "Dây an toàn cứu hộ - Batch A2024",
-      sku: "SKU001",
-      quantity: 12,
-      expiryDate: "2026-03-15",
-      daysToExpiry: 50,
-      status: "upcoming",
-    },
-    {
-      id: "EXP002",
-      name: "Mũ bảo hiểm chuyên dụng - Batch B2024",
-      sku: "SKU002",
-      quantity: 8,
-      expiryDate: "2026-02-10",
-      daysToExpiry: 16,
-      status: "warning",
-    },
-    {
-      id: "EXP003",
-      name: "Bộ cứu hộ di động - Batch C2023",
-      sku: "SKU004",
-      quantity: 5,
-      expiryDate: "2026-01-30",
-      daysToExpiry: -5,
-      status: "expired",
-    },
-  ]);
-
-  const getExpiryBadge = (status: string) => {
-    switch (status) {
-      case "expired":
-        return "bg-red-100 text-red-700 border border-red-200";
-      case "warning":
-        return "bg-orange-100 text-orange-700 border border-orange-200";
-      case "upcoming":
-        return "bg-yellow-100 text-yellow-700 border border-yellow-200";
-      default:
-        return "bg-slate-100 text-slate-700";
-    }
-  };
-
-  return (
-    <section className="space-y-6">
-      <header className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex min-w-[280px] flex-1 items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2">
-            <Search className="h-4 w-4 text-slate-400" />
-            <input
-              className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-              placeholder="Tìm kiếm sản phẩm, batch..."
-              style={{ fontFamily: "var(--font-sans)" }}
-            />
-          </div>
-          <button
-            className="rounded-lg px-4 py-2 text-sm font-medium text-white transition"
-            style={{ backgroundColor: "var(--color-blue-950)" }}
-          >
-            Xuất báo cáo
-          </button>
-        </div>
-      </header>
-
-      <article className="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 p-6">
-          <h3
-            className="text-xl font-bold text-slate-900"
-            style={{ fontFamily: "var(--font-primary)" }}
-          >
-            Sản phẩm sắp/đã hết hạn
-          </h3>
-          <p className="mt-1 text-sm text-slate-600">
-            Giám sát ngày hết hạn sử dụng - {expiryItems.length} mục
-          </p>
-        </div>
-
-        <div className="space-y-3 p-6">
-          {expiryItems.map((item) => (
-            <div
-              key={item.id}
-              className={`rounded-lg border p-4 ${getExpiryBadge(item.status)}`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <h4 className="font-semibold">{item.name}</h4>
-                  <p className="mt-1 text-sm opacity-75">
-                    {item.sku} • {item.quantity} cái
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold">{item.expiryDate}</p>
-                  <p className="mt-1 text-sm font-medium">
-                    {item.daysToExpiry > 0
-                      ? `Còn ${item.daysToExpiry} ngày`
-                      : `Đã hết ${Math.abs(item.daysToExpiry)} ngày`}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </article>
-    </section>
-  );
-}
-
 export default function ManagerDashboard() {
   const { activeMenu } = useManager();
 
@@ -1929,7 +1014,7 @@ export default function ManagerDashboard() {
                     className="text-xl font-bold text-slate-900"
                     style={{ fontFamily: "var(--font-primary)" }}
                   >
-                    Statistics
+                    Thống kê vận hành
                   </h3>
                   <p className="mt-1 text-sm text-slate-600">
                     Chỉ tiêu theo dõi hiệu quả vận hành theo tháng
@@ -1977,8 +1062,8 @@ export default function ManagerDashboard() {
               <StatisticsChart />
             </section>
 
-            {/* HCM Map & June Goals */}
-            <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {/* HCM Map & Analytics */}
+            <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
               <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-start justify-between">
                   <div>
@@ -1986,10 +1071,10 @@ export default function ManagerDashboard() {
                       className="text-xl font-bold text-slate-900"
                       style={{ fontFamily: "var(--font-primary)" }}
                     >
-                      Service Coverage
+                      Khu vực hoạt động
                     </h3>
                     <p className="mt-1 text-sm text-slate-600">
-                      HCM city distribution with MapLibre GL
+                      Các khu vực tại TP.HCM có hoạt động cứu hộ diễn ra
                     </p>
                   </div>
                   <button className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100">
@@ -2008,10 +1093,10 @@ export default function ManagerDashboard() {
                       className="text-xl font-bold text-slate-900"
                       style={{ fontFamily: "var(--font-primary)" }}
                     >
-                      June Goals
+                      Top khu vực có nhiều sự cố nhất
                     </h3>
                     <p className="mt-1 text-sm text-slate-600">
-                      Mục tiêu ngân sách
+                      Thống kê số yêu cầu theo khu vực
                     </p>
                   </div>
                   <button className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100">
@@ -2019,69 +1104,473 @@ export default function ManagerDashboard() {
                   </button>
                 </div>
 
-                <div className="mt-8">
-                  <svg viewBox="0 0 360 180" className="w-full">
-                    <path
-                      d="M 30 150 A 120 120 0 0 1 330 150"
-                      fill="none"
-                      stroke="#e2e8f0"
-                      strokeWidth="12"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M 30 150 A 120 120 0 0 1 290 120"
-                      fill="none"
-                      stroke="#3b82f6"
-                      strokeWidth="12"
-                      strokeLinecap="round"
+                <div className="mt-6">
+                  <svg viewBox="0 0 400 250" className="w-full">
+                    {/* Bar Chart */}
+                    <rect
+                      x="50"
+                      y="20"
+                      width="30"
+                      height="180"
+                      fill="#3b82f6"
+                      rx="4"
                     />
                     <text
-                      x="180"
-                      y="85"
+                      x="65"
+                      y="220"
                       textAnchor="middle"
-                      className="fill-slate-600 text-sm"
+                      className="text-xs fill-slate-600"
                       style={{ fontFamily: "var(--font-primary)" }}
                     >
-                      June Goals
+                      Q1
                     </text>
                     <text
-                      x="180"
-                      y="125"
+                      x="65"
+                      y="10"
                       textAnchor="middle"
-                      className="fill-slate-900 text-4xl font-bold"
+                      className="text-sm fill-slate-900 font-bold"
                       style={{ fontFamily: "var(--font-primary)" }}
                     >
-                      $90K
+                      245
+                    </text>
+
+                    <rect
+                      x="110"
+                      y="40"
+                      width="30"
+                      height="160"
+                      fill="#0ea5e9"
+                      rx="4"
+                    />
+                    <text
+                      x="125"
+                      y="220"
+                      textAnchor="middle"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q2
+                    </text>
+                    <text
+                      x="125"
+                      y="30"
+                      textAnchor="middle"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      198
+                    </text>
+
+                    <rect
+                      x="170"
+                      y="10"
+                      width="30"
+                      height="190"
+                      fill="#06b6d4"
+                      rx="4"
+                    />
+                    <text
+                      x="185"
+                      y="220"
+                      textAnchor="middle"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q3
+                    </text>
+                    <text
+                      x="185"
+                      y="0"
+                      textAnchor="middle"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      312
+                    </text>
+
+                    <rect
+                      x="230"
+                      y="80"
+                      width="30"
+                      height="120"
+                      fill="#14b8a6"
+                      rx="4"
+                    />
+                    <text
+                      x="245"
+                      y="220"
+                      textAnchor="middle"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q4
+                    </text>
+                    <text
+                      x="245"
+                      y="70"
+                      textAnchor="middle"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      142
+                    </text>
+
+                    {/* Axis */}
+                    <line
+                      x1="40"
+                      y1="200"
+                      x2="280"
+                      y2="200"
+                      stroke="#e2e8f0"
+                      strokeWidth="1"
+                    />
+                    <line
+                      x1="40"
+                      y1="20"
+                      x2="40"
+                      y2="200"
+                      stroke="#e2e8f0"
+                      strokeWidth="1"
+                    />
+                  </svg>
+                </div>
+
+                <div className="mt-6 space-y-3 border-t border-slate-200 pt-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">
+                      Q3 - Khu vực Q3
+                    </span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      312 requests
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">
+                      Q1 - Khu vực Q1
+                    </span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      245 requests
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">
+                      Q2 - Khu vực Q2
+                    </span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      198 requests
+                    </span>
+                  </div>
+                </div>
+              </article>
+
+              <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3
+                      className="text-xl font-bold text-slate-900"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Khu vực có thời gian xử lý chậm nhất
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Đánh giá tốc độ phản ứng theo khu vực
+                    </p>
+                  </div>
+                  <button className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100">
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="mt-6">
+                  <svg viewBox="0 0 400 250" className="w-full">
+                    {/* Horizontal Bar Chart */}
+                    <text
+                      x="10"
+                      y="35"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Quận 1
+                    </text>
+                    <rect
+                      x="80"
+                      y="20"
+                      width="240"
+                      height="25"
+                      fill="#ef4444"
+                      rx="4"
+                    />
+                    <text
+                      x="330"
+                      y="37"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      45m
+                    </text>
+
+                    <text
+                      x="10"
+                      y="95"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Quận 2
+                    </text>
+                    <rect
+                      x="80"
+                      y="80"
+                      width="200"
+                      height="25"
+                      fill="#f97316"
+                      rx="4"
+                    />
+                    <text
+                      x="290"
+                      y="97"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      38m
+                    </text>
+
+                    <text
+                      x="10"
+                      y="155"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Quận 3
+                    </text>
+                    <rect
+                      x="80"
+                      y="140"
+                      width="160"
+                      height="25"
+                      fill="#eab308"
+                      rx="4"
+                    />
+                    <text
+                      x="250"
+                      y="157"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      28m
+                    </text>
+
+                    <text
+                      x="10"
+                      y="215"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Quận 4
+                    </text>
+                    <rect
+                      x="80"
+                      y="200"
+                      width="100"
+                      height="25"
+                      fill="#22c55e"
+                      rx="4"
+                    />
+                    <text
+                      x="190"
+                      y="217"
+                      className="text-sm fill-slate-900 font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      18m
                     </text>
                   </svg>
                 </div>
 
-                <div className="mt-8 space-y-4 border-t border-slate-200 pt-6">
+                <div className="mt-6 border-t border-slate-200 pt-4">
+                  <p className="text-sm text-slate-600">
+                    <span className="font-semibold text-slate-900">Quận 1</span>{" "}
+                    cần cải thiện tốc độ xử lý
+                  </p>
+                </div>
+              </article>
+
+              <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex items-start justify-between">
                   <div>
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Marketing
-                      </p>
-                      <p className="text-sm font-semibold text-slate-900">
-                        85%
-                      </p>
-                    </div>
-                    <div className="h-2 rounded-full bg-slate-200">
-                      <div className="h-2 w-[85%] rounded-full bg-blue-500" />
-                    </div>
+                    <h3
+                      className="text-xl font-bold text-slate-900"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Khu vực thiếu team
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Ít đội nhưng nhiều request
+                    </p>
                   </div>
-                  <div>
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Operations
-                      </p>
-                      <p className="text-sm font-semibold text-slate-900">
-                        55%
-                      </p>
-                    </div>
-                    <div className="h-2 rounded-full bg-slate-200">
-                      <div className="h-2 w-[55%] rounded-full bg-blue-500" />
-                    </div>
+                  <button className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100">
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="mt-6">
+                  <svg viewBox="0 0 400 250" className="w-full">
+                    {/* Bubble/Scatter Chart - Requests vs Teams */}
+                    {/* X: Teams, Y: Requests */}
+
+                    {/* Axis labels */}
+                    <text
+                      x="350"
+                      y="245"
+                      textAnchor="middle"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Teams
+                    </text>
+                    <text
+                      x="15"
+                      y="120"
+                      textAnchor="middle"
+                      transform="rotate(-90 15 120)"
+                      className="text-xs fill-slate-600"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Requests
+                    </text>
+
+                    {/* Axis lines */}
+                    <line
+                      x1="50"
+                      y1="220"
+                      x2="370"
+                      y2="220"
+                      stroke="#e2e8f0"
+                      strokeWidth="1"
+                    />
+                    <line
+                      x1="50"
+                      y1="20"
+                      x2="50"
+                      y2="220"
+                      stroke="#e2e8f0"
+                      strokeWidth="1"
+                    />
+
+                    {/* Grid lines */}
+                    <line
+                      x1="50"
+                      y1="140"
+                      x2="370"
+                      y2="140"
+                      stroke="#f1f5f9"
+                      strokeWidth="1"
+                      strokeDasharray="2,2"
+                    />
+                    <line
+                      x1="150"
+                      y1="20"
+                      x2="150"
+                      y2="220"
+                      stroke="#f1f5f9"
+                      strokeWidth="1"
+                      strokeDasharray="2,2"
+                    />
+                    <line
+                      x1="250"
+                      y1="20"
+                      x2="250"
+                      y2="220"
+                      stroke="#f1f5f9"
+                      strokeWidth="1"
+                      strokeDasharray="2,2"
+                    />
+
+                    {/* Bubbles - Critical (Few teams, many requests) */}
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="20"
+                      fill="#ef4444"
+                      opacity="0.7"
+                    />
+                    <text
+                      x="80"
+                      y="85"
+                      textAnchor="middle"
+                      className="text-xs fill-white font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q1
+                    </text>
+
+                    <circle
+                      cx="120"
+                      cy="100"
+                      r="18"
+                      fill="#f97316"
+                      opacity="0.7"
+                    />
+                    <text
+                      x="120"
+                      y="105"
+                      textAnchor="middle"
+                      className="text-xs fill-white font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q2
+                    </text>
+
+                    {/* Bubbles - Good (Normal) */}
+                    <circle
+                      cx="250"
+                      cy="160"
+                      r="15"
+                      fill="#22c55e"
+                      opacity="0.7"
+                    />
+                    <text
+                      x="250"
+                      y="165"
+                      textAnchor="middle"
+                      className="text-xs fill-white font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q4
+                    </text>
+
+                    <circle
+                      cx="310"
+                      cy="170"
+                      r="14"
+                      fill="#3b82f6"
+                      opacity="0.7"
+                    />
+                    <text
+                      x="310"
+                      y="175"
+                      textAnchor="middle"
+                      className="text-xs fill-white font-bold"
+                      style={{ fontFamily: "var(--font-primary)" }}
+                    >
+                      Q5
+                    </text>
+                  </svg>
+                </div>
+
+                <div className="mt-6 space-y-3 border-t border-slate-200 pt-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-red-500" />
+                    <span className="text-sm text-slate-600">
+                      <span className="font-semibold">Quận 1</span>: 3 teams,
+                      240 requests
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-orange-500" />
+                    <span className="text-sm text-slate-600">
+                      <span className="font-semibold">Quận 2</span>: 4 teams,
+                      198 requests
+                    </span>
                   </div>
                 </div>
               </article>
