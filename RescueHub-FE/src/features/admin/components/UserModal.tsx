@@ -1,17 +1,31 @@
 import React, { useState } from "react";
 
-const UserModal = ({ onClose, onSubmit, defaultData }) => {
+const UserModal = ({ onClose, onSubmit, defaultData, roles }) => {
   const [form, setForm] = useState(
-    defaultData || {
-      name: "",
-      email: "",
-      role: "Admin",
-      status: "active",
-    }
+    defaultData
+      ? {
+          id: defaultData.id,
+          username: defaultData.username,
+          displayName: defaultData.displayName,
+          email: defaultData.email,
+          phone: defaultData.phone,
+          role: defaultData.roles?.[0]?.code,
+          status: defaultData.isActive ? "active" : "inactive",
+          password: "",
+        }
+      : {
+          username: "",
+          displayName: "",
+          email: "",
+          phone: "",
+          role: roles?.[0]?.code,
+          status: "active",
+          password: "",
+        }
   );
 
   const handleSubmit = () => {
-    if (!form.name || !form.email) {
+    if (!form.displayName || !form.email || !form.username) {
       alert("Nhập đầy đủ thông tin!");
       return;
     }
@@ -27,15 +41,28 @@ const UserModal = ({ onClose, onSubmit, defaultData }) => {
           {defaultData ? "Sửa user" : "Thêm user"}
         </h2>
 
+        {/* USERNAME */}
         <input
-          placeholder="Tên"
-          value={form.name}
+          placeholder="Username"
+          value={form.username}
+          disabled={!!defaultData}
           onChange={(e) =>
-            setForm({ ...form, name: e.target.value })
+            setForm({ ...form, username: e.target.value })
           }
           className="w-full border p-2 rounded"
         />
 
+        {/* NAME */}
+        <input
+          placeholder="Tên"
+          value={form.displayName}
+          onChange={(e) =>
+            setForm({ ...form, displayName: e.target.value })
+          }
+          className="w-full border p-2 rounded"
+        />
+
+        {/* EMAIL */}
         <input
           placeholder="Email"
           value={form.email}
@@ -45,6 +72,30 @@ const UserModal = ({ onClose, onSubmit, defaultData }) => {
           className="w-full border p-2 rounded"
         />
 
+        {/* PHONE */}
+        <input
+          placeholder="SĐT"
+          value={form.phone}
+          onChange={(e) =>
+            setForm({ ...form, phone: e.target.value })
+          }
+          className="w-full border p-2 rounded"
+        />
+
+        {/* PASSWORD (only create) */}
+        {!defaultData && (
+          <input
+            placeholder="Password"
+            type="password"
+            value={form.password}
+            onChange={(e) =>
+              setForm({ ...form, password: e.target.value })
+            }
+            className="w-full border p-2 rounded"
+          />
+        )}
+
+        {/* ROLE */}
         <select
           value={form.role}
           onChange={(e) =>
@@ -52,11 +103,14 @@ const UserModal = ({ onClose, onSubmit, defaultData }) => {
           }
           className="w-full border p-2 rounded"
         >
-          <option>Admin</option>
-          <option>Coordinator</option>
-          <option>Rescue Team</option>
+          {roles.map((r) => (
+            <option key={r.code} value={r.code}>
+              {r.name}
+            </option>
+          ))}
         </select>
 
+        {/* STATUS */}
         <select
           value={form.status}
           onChange={(e) =>
