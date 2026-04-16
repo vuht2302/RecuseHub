@@ -14,14 +14,14 @@ import { useNavigate } from "react-router-dom";
 import { performLogout } from "../../auth/services/authStorage";
 
 export const adminMenu = [
-  { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
+  // { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
+  { id: "reports", label: "Báo cáo", icon: BarChart3 },
   { id: "users", label: "Tài khoản", icon: Users },
   { id: "roles", label: "Vai trò", icon: Shield },
   { id: "master-data", label: "Danh mục hệ thống", icon: Settings },
   { id: "catalog", label: "Danh mục sản phẩm", icon: CarTaxiFront },
   { id: "workflow", label: "Workflow", icon: SquareMenu },
   { id: "system-setting", label: "Cài đặt hệ thống", icon: Settings },
-  { id: "reports", label: "Báo cáo", icon: BarChart3 },
 ];
 
 export const AdminSidebar = ({ active, setActive }) => {
