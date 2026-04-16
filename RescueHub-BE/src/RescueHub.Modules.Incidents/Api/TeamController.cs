@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using RescueHub.BuildingBlocks.Api;
 using RescueHub.Modules.Incidents.Application;
 
@@ -22,6 +23,37 @@ public sealed class TeamController(IIncidentService service) : BaseApiController
     [HttpGet("missions")]
     public async Task<ActionResult<ApiResponse<object>>> GetMissions()
         => OkResponse<object>(await service.GetTeamMissions(), "Lay danh sach nhiem vu team thanh cong");
+
+    /// <summary>
+    /// Danh sach actionCode chuan cho mission status update.
+    /// </summary>
+    [HttpGet("missions/action-codes")]
+    public async Task<ActionResult<ApiResponse<object>>> GetMissionActionCodes()
+        => OkResponse<object>(await service.GetMissionActionCodes(), "Lay danh sach actionCode mission thanh cong");
+
+    /// <summary>
+    /// Danh sach thanh vien cua doi dang dang nhap (team leader).
+    /// </summary>
+    [HttpGet("my-members")]
+    public async Task<ActionResult<ApiResponse<object>>> GetMyMembers()
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
+
+        if (!Guid.TryParse(userIdValue, out var leaderUserId))
+        {
+            return BadRequestResponse<object>("Khong xac dinh duoc user dang nhap.");
+        }
+
+        try
+        {
+            return OkResponse<object>(await service.GetMyTeamMembers(leaderUserId), "Lay danh sach thanh vien doi thanh cong");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequestResponse<object>(ex.Message);
+        }
+    }
 
     /// <summary>
     /// Chi tiet nhiem vu team.

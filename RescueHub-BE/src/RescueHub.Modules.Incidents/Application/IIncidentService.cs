@@ -22,6 +22,10 @@ public interface IIncidentService
 
     Task<object> GetTeamMissions();
 
+    Task<object> GetMyTeamMembers(Guid leaderUserId);
+
+    Task<object> GetMissionActionCodes();
+
     Task<object> GetTeamMissionDetail(Guid missionId);
 
     Task<object> TeamRespondMission(Guid missionId, TeamRespondMissionRequest request);

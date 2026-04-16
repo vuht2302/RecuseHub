@@ -30,6 +30,12 @@ public sealed class IncidentService(IIncidentRepository repository) : IIncidentS
     public Task<object> GetTeamMissions()
         => repository.GetTeamMissions();
 
+    public Task<object> GetMyTeamMembers(Guid leaderUserId)
+        => repository.GetMyTeamMembers(leaderUserId);
+
+    public Task<object> GetMissionActionCodes()
+        => repository.GetMissionActionCodes();
+
     public Task<object> GetTeamMissionDetail(Guid missionId)
         => repository.GetTeamMissionDetail(missionId);
 
