@@ -57,12 +57,30 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+var configuredCorsOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>()
+    ?.Where(x => !string.IsNullOrWhiteSpace(x))
+    .Select(x => x.Trim())
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
+        if (configuredCorsOrigins is { Length: > 0 })
+        {
+            policy
+                .WithOrigins(configuredCorsOrigins)
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+            return;
+        }
+
         policy
-            .AllowAnyOrigin()
+            .SetIsOriginAllowed(_ => true)
             .AllowAnyMethod()
             .AllowAnyHeader();
     });

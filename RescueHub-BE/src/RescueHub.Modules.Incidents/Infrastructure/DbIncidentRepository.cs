@@ -8,6 +8,23 @@ namespace RescueHub.Modules.Incidents.Infrastructure;
 
 public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncidentRepository
 {
+    private static readonly string[] MissionActionCodes =
+    [
+        "TEAM_ACCEPT",
+        "TEAM_REJECT",
+        "DEPART",
+        "ARRIVED",
+        "ON_SCENE",
+        "START_RESCUE",
+        "IN_PROGRESS",
+        "FIELD_REPORT",
+        "NEED_SUPPORT",
+        "UNREACHABLE",
+        "COMPLETE",
+        "COMPLETED",
+        "ABORTED"
+    ];
+
     public async Task<object> List()
     {
         var items = await dbContext.incidents
@@ -591,6 +608,102 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
         return new { items };
     }
 
+    public async Task<object> GetMyTeamMembers(Guid leaderUserId)
+    {
+        var teams = await dbContext.teams
+            .AsNoTracking()
+            .Where(x => x.leader_user_id == leaderUserId)
+            .Include(x => x.team_members)
+            .ThenInclude(x => x.user)
+            .Include(x => x.team_members)
+            .ThenInclude(x => x.team_member_skills)
+            .ThenInclude(x => x.skill)
+            .OrderBy(x => x.name)
+            .ToListAsync();
+
+        if (teams.Count == 0)
+        {
+            throw new InvalidOperationException("Tai khoan hien tai khong la leader cua team nao.");
+        }
+
+        var items = teams.Select(team => new
+        {
+            teamId = team.id,
+            teamCode = team.code,
+            teamName = team.name,
+            status = new
+            {
+                code = team.status_code,
+                name = team.status_code,
+                color = (string?)null
+            },
+            members = team.team_members
+                .OrderBy(x => x.is_team_leader ? 0 : 1)
+                .ThenBy(x => x.full_name)
+                .Select(member => new
+                {
+                    memberId = member.id,
+                    fullName = member.full_name,
+                    phone = member.phone,
+                    userId = member.user_id,
+                    username = member.user?.username,
+                    displayName = member.user?.display_name,
+                    isTeamLeader = member.is_team_leader,
+                    status = new
+                    {
+                        code = member.status_code,
+                        name = member.status_code,
+                        color = (string?)null
+                    },
+                    lastKnownLocation = member.last_known_location == null
+                        ? null
+                        : new
+                        {
+                            lat = (decimal)member.last_known_location.Y,
+                            lng = (decimal)member.last_known_location.X
+                        },
+                    skills = member.team_member_skills
+                        .OrderByDescending(x => x.is_primary)
+                        .ThenBy(x => x.skill.code)
+                        .Select(x => new
+                        {
+                            teamMemberSkillId = x.id,
+                            skillId = x.skill_id,
+                            skillCode = x.skill.code,
+                            skillName = x.skill.name,
+                            levelCode = x.level_code,
+                            isPrimary = x.is_primary
+                        })
+                        .ToList(),
+                    notes = member.notes,
+                    createdAt = member.created_at
+                })
+                .ToList()
+        }).ToList();
+
+        return new { items };
+    }
+
+    public Task<object> GetMissionActionCodes()
+    {
+        var items = MissionActionCodes.Select(x => new
+        {
+            actionCode = x,
+            targetStatusCode = MapActionToStatus(x),
+            requestFormat = new
+            {
+                actionCode = x,
+                note = "string"
+            }
+        }).ToList();
+
+        return Task.FromResult<object>(new
+        {
+            items,
+            updateEndpoint = "/api/v1/team/missions/{missionId}/status"
+        });
+    }
+
     public async Task<object> GetTeamMissionDetail(Guid missionId)
     {
         var mission = await dbContext.missions
@@ -693,6 +806,17 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
                     requestedAt = x.requested_at
                 })
                 .ToList(),
+            allActionCodes = MissionActionCodes,
+            actionCodeCatalog = MissionActionCodes.Select(x => new
+            {
+                actionCode = x,
+                targetStatusCode = MapActionToStatus(x)
+            }).ToList(),
+            historyActionCodes = mission.mission_status_histories
+                .OrderByDescending(x => x.changed_at)
+                .Select(x => x.action_code)
+                .Distinct()
+                .ToList(),
             createdAt = mission.created_at,
             updatedAt = mission.updated_at
         };
@@ -788,13 +912,16 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
         var mappedStateCode = actionCode switch
         {
             "DEPART" => "EN_ROUTE",
-            "ARRIVED" => "ON_SCENE",
-            "ON_SCENE" => "ON_SCENE",
-            "START_RESCUE" => "IN_PROGRESS",
-            "IN_PROGRESS" => "IN_PROGRESS",
+            "ARRIVED" => "ON_SITE",
+            "ON_SCENE" => "ON_SITE",
+            "START_RESCUE" => "RESCUING",
+            "IN_PROGRESS" => "RESCUING",
+            "FIELD_REPORT" => "RESCUING",
+            "NEED_SUPPORT" => "NEED_SUPPORT",
             "COMPLETE" => "COMPLETED",
             "COMPLETED" => "COMPLETED",
-            "ABORTED" => "CANCELLED",
+            "ABORTED" => "ABORTED",
+            "UNREACHABLE" => "ABORTED",
             _ => actionCode
         };
 
@@ -833,6 +960,25 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             updatedAt = now
         };
     }
+
+    private static string MapActionToStatus(string actionCode)
+        => actionCode switch
+        {
+            "DEPART" => "EN_ROUTE",
+            "ARRIVED" => "ON_SITE",
+            "ON_SCENE" => "ON_SITE",
+            "START_RESCUE" => "RESCUING",
+            "IN_PROGRESS" => "RESCUING",
+            "COMPLETE" => "COMPLETED",
+            "COMPLETED" => "COMPLETED",
+            "ABORTED" => "ABORTED",
+            "TEAM_ACCEPT" => "EN_ROUTE",
+            "TEAM_REJECT" => "REJECTED",
+            "FIELD_REPORT" => "RESCUING",
+            "NEED_SUPPORT" => "NEED_SUPPORT",
+            "UNREACHABLE" => "ABORTED",
+            _ => actionCode
+        };
 
     public async Task<object> TeamCreateFieldReport(Guid missionId, TeamFieldReportRequest request)
     {
