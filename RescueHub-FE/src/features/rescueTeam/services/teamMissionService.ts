@@ -188,3 +188,30 @@ export const updateMissionStatus = async (
     },
   );
 };
+
+export interface TeamRespondMissionRequest {
+  response: "ACCEPT" | "REJECT";
+  reasonCode?: string;
+  note?: string;
+}
+
+export interface TeamRespondMissionResponse {
+  missionId: string;
+  response: string;
+  respondedAt: string;
+}
+
+export const respondToMission = async (
+  missionId: string,
+  request: TeamRespondMissionRequest,
+): Promise<TeamRespondMissionResponse> => {
+  return requestTeamApiWithBody<TeamRespondMissionResponse>(
+    `/api/v1/team/missions/${missionId}/respond`,
+    "POST",
+    {
+      response: request.response,
+      reasonCode: request.reasonCode,
+      note: request.note,
+    },
+  );
+};
