@@ -80,7 +80,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               className="block text-sm font-bold text-gray-700 mb-2"
               style={{ fontFamily: "var(--font-primary)" }}
             >
-              Username
+              Tài Khoản
             </label>
             <div className="relative">
               <Mail
@@ -91,7 +91,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Nhap username"
+                placeholder="Nhập tài khoản"
                 className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-950 focus:outline-none transition-colors"
                 style={{ borderColor: "var(--color-blue-950)" }}
                 required
@@ -135,7 +135,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               className="text-blue-950 hover:underline font-semibold"
               style={{ color: "var(--color-blue-950)" }}
             >
-              Quên MK?
+              Quên Mật Khẩu?
             </button>
           </div>
 
