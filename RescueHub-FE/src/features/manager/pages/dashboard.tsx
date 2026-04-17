@@ -58,26 +58,6 @@ type IncidentHotspot = {
   lastIncident: string;
 };
 
-type RescueEvent = {
-  id: string;
-  name: string;
-  description: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-  latitude: number;
-  longitude: number;
-  type: "relief" | "rescue" | "evacuation" | "medical" | "other";
-  priority: "low" | "medium" | "high" | "critical";
-  status: "planning" | "ongoing" | "completed" | "cancelled";
-  team: string;
-  requiredResources: string[];
-  budget: string;
-  createdAt: string;
-  createdBy: string;
-};
-
 const kpis: KPI[] = [
   {
     title: "Vụ việc đang xử lý",

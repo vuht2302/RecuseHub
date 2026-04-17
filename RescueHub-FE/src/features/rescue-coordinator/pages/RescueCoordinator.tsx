@@ -1,15 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Search,
-  AlertTriangle,
-  CheckCircle2,
-  Truck,
-  MapPin,
-  Users,
-  TrendingUp,
-  Map,
-  X,
-} from "lucide-react";
+import { Search, MapPin, Map, X } from "lucide-react";
 import { useCoordinator } from "../../../shared/context/CoordinatorContext";
 import { getAuthSession } from "../../../features/auth/services/authStorage";
 import { DispatchModal } from "../components/DispatchModal";
@@ -21,7 +11,6 @@ import {
   getIncidents,
   getIncidentDetail,
   verifyIncident,
-  assessIncident,
   type IncidentItem,
   type IncidentDetail,
 } from "../services/incidentServices";
