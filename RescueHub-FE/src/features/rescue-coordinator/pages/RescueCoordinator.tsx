@@ -7,6 +7,7 @@ import { VerificationModal } from "../components/VerificationModal";
 import { SeverityAssessmentModal } from "../components/SeverityAssessmentModal";
 import { CurrentMissionsSection } from "../components/CurrentMissionsSection";
 import { MissionMapSection } from "../components/MissionMapSection";
+import { IncidentDetailPanel } from "../components/IncidentDetailPanel";
 import {
   getIncidents,
   getIncidentDetail,
@@ -664,179 +665,55 @@ const RescueCoordinatorPage: React.FC = () => {
             {activeMenu === "current" && <CurrentMissionsSection />}
           </div>
 
-          {/* Right Panel - Current Task */}
+          {/* Right Panel - Incident Detail */}
           {activeMenu !== "current" && activeMenu !== "map" && (
-            <div className="bg-white rounded-lg shadow-sm p-6 h-fit sticky top-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
-                Chi tiết yêu cầu
-              </h3>
+            <div
+              className="bg-white rounded-xl shadow-sm border border-gray-100 sticky top-6 overflow-hidden"
+              style={{ maxHeight: "calc(100vh - 120px)", display: "flex", flexDirection: "column" }}
+            >
+              {/* Panel Header */}
+              <div className="px-5 py-3 border-b border-gray-100 flex-shrink-0">
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                  Chi tiết yêu cầu
+                </h3>
+              </div>
 
               {selectedRequest ? (
-                <div className="space-y-4">
+                <div className="flex-1 overflow-hidden flex flex-col">
                   {isLoadingDetail && (
-                    <p className="text-sm text-gray-600">
-                      Đang tải chi tiết sự cố...
-                    </p>
-                  )}
-
-                  {detailError && (
-                    <div className="border border-red-200 bg-red-50 rounded-lg p-3">
-                      <p className="text-sm text-red-700">{detailError}</p>
+                    <div className="flex items-center justify-center py-12">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" style={{ borderWidth: 3 }} />
+                        <p className="text-sm text-gray-500">Đang tải chi tiết sự cố...</p>
+                      </div>
                     </div>
                   )}
 
-                  {!isLoadingDetail && selectedIncidentDetail ? (
-                    <>
-                      <div>
-                        <span className="text-xs text-gray-600 font-semibold">
-                          Mã
-                        </span>
-                        <p className="text-lg font-bold text-gray-900">
-                          {selectedIncidentDetail.incidentCode}
-                        </p>
-                      </div>
+                  {detailError && (
+                    <div className="mx-5 mt-4 border border-red-200 bg-red-50 rounded-xl p-4">
+                      <p className="text-sm text-red-700 font-medium">{detailError}</p>
+                    </div>
+                  )}
 
-                      <div className="bg-red-50 border border-red-200 rounded p-3">
-                        <p className="text-sm font-bold text-red-900">
-                          Sự cố {selectedIncidentDetail.incidentCode}
-                        </p>
-                        <span className="text-xs text-red-700 font-semibold">
-                          {selectedIncidentDetail.priority?.name || "KHẨN CẤP"}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <span className="text-xs text-gray-600 block">
-                            📍 Vị trí
-                          </span>
-                          <p className="text-gray-900">
-                            {selectedIncidentDetail.location?.addressText ||
-                              "Chưa có thông tin vị trí"}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-xs text-gray-600 block">
-                            👤 Người gửi tín hiệu
-                          </span>
-                          <p className="text-gray-900">
-                            {selectedIncidentDetail.reporter?.name ||
-                              "Chưa cập nhật"}{" "}
-                            -{" "}
-                            {selectedIncidentDetail.reporter?.phone ||
-                              "Chưa cập nhật"}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-xs text-gray-600 block">
-                            ⏰ Thời gian tạo yêu cầu
-                          </span>
-                          <p className="text-gray-900">
-                            {new Date(
-                              selectedIncidentDetail.reportedAt,
-                            ).toLocaleTimeString("vi-VN", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="border border-blue-100 bg-blue-50 rounded-lg p-3">
-                        <h4
-                          className="text-sm font-bold mb-2 text-blue-950"
-                          style={{ color: "var(--color-blue-950)" }}
-                        >
-                          Thông tin tín hiệu nhận được
-                        </h4>
-                        <div className="space-y-1 text-sm">
-                          <p className="text-gray-700">
-                            Kênh tiếp nhận:{" "}
-                            <span className="font-semibold text-gray-900">
-                              {selectedIncidentDetail.channel?.name ||
-                                "Chưa cập nhật"}
-                            </span>
-                          </p>
-                          <p className="text-gray-700">
-                            Thời điểm nhận tín hiệu:{" "}
-                            <span className="font-semibold text-gray-900">
-                              {new Date(
-                                selectedIncidentDetail.reportedAt,
-                              ).toLocaleTimeString("vi-VN", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </p>
-                          <p className="text-gray-700">
-                            Số người cần hỗ trợ:{" "}
-                            <span className="font-semibold text-gray-900">
-                              {selectedIncidentDetail.victimCountEstimate ?? 0}
-                            </span>
-                          </p>
-                          <p className="text-gray-700">
-                            Trạng thái xác minh:{" "}
-                            <span
-                              className={`inline-block mt-1 font-semibold px-3 py-1 rounded text-xs ${getStatusColor(selectedRequest.status)}`}
-                            >
-                              {selectedIncidentDetail.status?.name ||
-                                getStatusBadge(selectedRequest.status)}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="border-t pt-4">
-                        <span className="text-xs text-gray-600 block mb-2">
-                          Mô tả chi tiết
-                        </span>
-                        <p className="text-sm text-gray-700 leading-relaxed">
-                          {selectedIncidentDetail.description ||
-                            "Chưa có mô tả"}
-                        </p>
-                      </div>
-
-                      <div className="border-t pt-4">
-                        <span className="text-xs text-gray-600 block mb-2">
-                          Ghi chú xác minh
-                        </span>
-                        <p className="text-sm text-gray-700 leading-relaxed">
-                          {selectedIncidentDetail.latestAssessment
-                            ? "Đã có thông tin đánh giá mới nhất."
-                            : "Đang chờ cập nhật ghi chú xác minh từ hệ thống."}
-                        </p>
-                      </div>
-                    </>
-                  ) : null}
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowVerificationModal(true)}
-                      className="flex-1 text-white font-bold py-2 rounded text-sm transition-colors hover:opacity-90"
-                      style={{ backgroundColor: "var(--color-blue-950)" }}
-                    >
-                      Xác minh thông tin
-                    </button>
-                    <button
-                      onClick={() => setShowAssessmentModal(true)}
-                      className="flex-1 text-white font-bold py-2 rounded text-sm transition-colors hover:opacity-90"
-                      style={{ backgroundColor: "#f59e0b" }}
-                    >
-                      Đánh giá mức độ
-                    </button>
-                    <button
-                      onClick={() => setShowDispatchModal(true)}
-                      className="flex-1 text-white font-bold py-2 rounded text-sm transition-colors hover:opacity-90"
-                      style={{ backgroundColor: "var(--color-blue-950)" }}
-                    >
-                      Điều phối ngay
-                    </button>
-                  </div>
+                  {!isLoadingDetail && selectedIncidentDetail && (
+                    <IncidentDetailPanel
+                      detail={selectedIncidentDetail}
+                      requestStatus={selectedRequest.status}
+                      onVerify={() => setShowVerificationModal(true)}
+                      onAssess={() => setShowAssessmentModal(true)}
+                      onDispatch={() => setShowDispatchModal(true)}
+                    />
+                  )}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-8">
-                  Chọn một yêu cầu để xem chi tiết
-                </p>
+                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                  <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                    <MapPin size={24} className="text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm">
+                    Chọn một yêu cầu để xem chi tiết
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -900,13 +777,19 @@ const RescueCoordinatorPage: React.FC = () => {
           onClose={() => setShowDispatchModal(false)}
           requestId={selectedRequest.id}
           requestTitle={selectedRequest.title}
-          location={selectedRequest.location}
-          victimCount={selectedRequest.victimCount}
+          location={
+            selectedIncidentDetail?.location?.addressText ||
+            selectedRequest.location
+          }
+          victimCount={
+            selectedIncidentDetail?.victimCountEstimate ??
+            selectedRequest.victimCount
+          }
+          priorityCode={selectedIncidentDetail?.priority?.code}
           onDispatch={(teamId) => {
             console.log(
               `Dispatching team ${teamId} to request ${selectedRequest.id}`,
             );
-            // TODO: Gọi API để lưu thông tin điều phối
           }}
         />
       )}
