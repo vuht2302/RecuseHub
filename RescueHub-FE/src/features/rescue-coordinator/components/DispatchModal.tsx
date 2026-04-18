@@ -30,6 +30,7 @@ interface DispatchModalProps {
   requestTitle: string;
   location: string;
   victimCount: number;
+  priorityCode?: string;
   onDispatch: (teamId: string) => void;
 }
 
@@ -40,6 +41,7 @@ const DispatchModal: React.FC<DispatchModalProps> = ({
   requestTitle,
   location,
   victimCount,
+  priorityCode,
   onDispatch,
 }) => {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
@@ -141,17 +143,17 @@ const DispatchModal: React.FC<DispatchModalProps> = ({
 
       const missionPayload: DispatchMissionRequest = {
         objective: requestTitle,
-        priorityCode: "HIGH",
+        priorityCode: priorityCode ?? "HIGH",
         teamAssignments: [
           {
             teamId: selectedTeamId,
             isPrimaryTeam: true,
-            memberIds: [], // Empty for now - members will be assigned by the team
-            vehicleIds: [], // Empty for now - vehicles will be assigned by the team
+            memberIds: [],
+            vehicleIds: [],
           },
         ],
         etaMinutes: selectedTeamData.estimatedTime,
-        note: `Incident at ${location} with ${victimCount} victims`,
+        note: `Sự cố tại ${location}${victimCount > 0 ? `, ước tính ${victimCount} nạn nhân` : ""}`,
       };
 
       await dispatchMission(requestId, session.accessToken, missionPayload);
@@ -446,7 +448,7 @@ const DispatchModal: React.FC<DispatchModalProps> = ({
               {dispatching && (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               )}
-              {dispatching ? "Dang dieu phoi..." : "Dieu phoi ngay"}
+              {dispatching ? "Dang dieu phoi..." : "Điều Phối Ngay"}
             </button>
           </div>
         </div>
