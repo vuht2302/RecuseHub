@@ -1,45 +1,61 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Plus, Eye, X, AlertCircle, ArrowRightLeft, Trash2 } from "lucide-react";
 import {
-  getStockTransactions, createStockTransaction,
-  type StockTransaction, type StockTransactionPayload, type TransactionLine,
+  getStockTransactions, getStockTransaction, createStockTransaction,
+  type StockTransaction, type StockTransactionListItem, type StockTransactionPayload, type TransactionLine,
 } from "../services/warehouseService";
 import { getAuthSession } from "../../../features/auth/services/authStorage";
 
 const TYPE_OPTIONS = ["RECEIPT", "ISSUE", "TRANSFER", "ADJUSTMENT", "RETURN"];
 const REF_OPTIONS = ["MANUAL", "MISSION", "RELIEF_ISSUE", "DISTRIBUTION"];
 
-function DetailModal({ tx, onClose }: { tx: StockTransaction; onClose: () => void }) {
+function DetailModal({ txId, onClose }: { txId: string; onClose: () => void }) {
+  const [tx, setTx] = useState<StockTransaction | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getStockTransaction(txId, getAuthSession()?.accessToken ?? "")
+      .then(setTx)
+      .finally(() => setLoading(false));
+  }, [txId]);
+
   return (
     <div className="fixed inset-0 bg-black/40 z-[200] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">{tx.transactionCode}</h2>
-            <p className="text-xs text-gray-500">{tx.transactionType?.name} • {new Date(tx.happenedAt).toLocaleString("vi-VN")}</p>
+            <h2 className="text-lg font-bold text-gray-900">{tx?.code || "Đang tải..."}</h2>
+            {tx && <p className="text-xs text-gray-500">{tx.transactionTypeCode} • {new Date(tx.happenedAt).toLocaleString("vi-VN")}</p>}
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100"><X size={18} /></button>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-xs text-gray-500 block">Kho</span><p className="font-semibold">{tx.warehouse?.warehouseName}</p></div>
-            <div><span className="text-xs text-gray-500 block">Loại tham chiếu</span><p className="font-semibold">{tx.referenceType}</p></div>
-            <div className="col-span-2"><span className="text-xs text-gray-500 block">Ghi chú</span><p className="text-gray-700">{tx.note || "—"}</p></div>
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-gray-700 mb-2">Dòng hàng ({tx.lines?.length ?? 0})</h3>
-            <div className="rounded-lg border border-gray-100 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead><tr className="bg-gray-50"><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Hàng hóa</th><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Lô</th><th className="px-3 py-2 text-right text-xs font-semibold text-gray-500">SL</th><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">ĐV</th></tr></thead>
-                <tbody className="divide-y divide-gray-50">
-                  {(tx.lines ?? []).map((l, i) => (
-                    <tr key={i}><td className="px-3 py-2 font-medium">{l.item?.itemName}</td><td className="px-3 py-2 font-mono text-xs text-blue-700">{l.lot?.lotNo || "—"}</td><td className="px-3 py-2 text-right font-bold">{l.qty}</td><td className="px-3 py-2 text-gray-500">{l.unitCode}</td></tr>
-                  ))}
-                </tbody>
-              </table>
+        
+        {loading ? (
+          <div className="p-12 text-center text-gray-500">Đang tải chi tiết...</div>
+        ) : tx ? (
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><span className="text-xs text-gray-500 block">Kho</span><p className="font-semibold">{tx.warehouse?.name}</p></div>
+              <div><span className="text-xs text-gray-500 block">Loại tham chiếu</span><p className="font-semibold">{tx.referenceType}</p></div>
+              <div className="col-span-2"><span className="text-xs text-gray-500 block">Ghi chú</span><p className="text-gray-700">{tx.note || "—"}</p></div>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-2">Dòng hàng ({tx.lines?.length ?? 0})</h3>
+              <div className="rounded-lg border border-gray-100 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead><tr className="bg-gray-50"><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Hàng hóa</th><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Lô</th><th className="px-3 py-2 text-right text-xs font-semibold text-gray-500">SL</th><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">ĐV</th></tr></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {(tx.lines ?? []).map((l, i) => (
+                      <tr key={i}><td className="px-3 py-2 font-medium">{l.item?.name}</td><td className="px-3 py-2 font-mono text-xs text-blue-700">{l.lot?.lotNo || "—"}</td><td className="px-3 py-2 text-right font-bold">{l.qty}</td><td className="px-3 py-2 text-gray-500">{l.unitCode}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="p-12 text-center text-red-500">Không tìm thấy thông tin.</div>
+        )}
       </div>
     </div>
   );
@@ -158,10 +174,10 @@ function typeBadge(code: string) {
 }
 
 export const TransactionTab: React.FC = () => {
-  const [data, setData] = useState<StockTransaction[]>([]);
+  const [data, setData] = useState<StockTransactionListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewTx, setViewTx] = useState<StockTransaction | null>(null);
+  const [viewTxId, setViewTxId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   const load = useCallback(async () => {
@@ -197,20 +213,20 @@ export const TransactionTab: React.FC = () => {
               <tr><td colSpan={8} className="py-12 text-center"><div className="flex flex-col items-center gap-2"><ArrowRightLeft size={32} className="text-gray-300" /><p className="text-gray-400 text-sm">Chưa có giao dịch</p></div></td></tr>
             ) : data.map(tx => (
               <tr key={tx.id} className="hover:bg-blue-50/30 transition-colors">
-                <td className="px-4 py-3 font-mono text-xs text-blue-700 font-semibold whitespace-nowrap">{tx.transactionCode}</td>
-                <td className="px-4 py-3">{typeBadge(tx.transactionType?.code ?? "")}</td>
-                <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{tx.warehouse?.warehouseName}</td>
+                <td className="px-4 py-3 font-mono text-xs text-blue-700 font-semibold whitespace-nowrap">{tx.code}</td>
+                <td className="px-4 py-3">{typeBadge(tx.transactionTypeCode)}</td>
+                <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{tx.warehouse?.name}</td>
                 <td className="px-4 py-3 text-gray-600 text-xs">{tx.referenceType}</td>
                 <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{new Date(tx.happenedAt).toLocaleString("vi-VN")}</td>
-                <td className="px-4 py-3 text-center"><span className="font-bold text-gray-700">{tx.lines?.length ?? 0}</span></td>
+                <td className="px-4 py-3 text-center"><span className="font-bold text-gray-700">{tx.lineCount ?? 0}</span></td>
                 <td className="px-4 py-3 text-gray-500 max-w-[160px] truncate text-xs">{tx.note || "—"}</td>
-                <td className="px-4 py-3"><button onClick={() => setViewTx(tx)} className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600"><Eye size={14} /></button></td>
+                <td className="px-4 py-3"><button onClick={() => setViewTxId(tx.id)} className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600"><Eye size={14} /></button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {viewTx && <DetailModal tx={viewTx} onClose={() => setViewTx(null)} />}
+      {viewTxId && <DetailModal txId={viewTxId} onClose={() => setViewTxId(null)} />}
       {showCreate && <CreateModal onClose={() => setShowCreate(false)} onSaved={() => { setShowCreate(false); void load(); }} />}
     </div>
   );
