@@ -26,6 +26,12 @@ export interface Location {
   landmark: string;
 }
 
+export interface IncidentFile {
+  fileId: string;
+  contentType: "IMAGE" | "VIDEO" | "DOCUMENT" | string;
+  url: string;
+}
+
 export interface IncidentDetail {
   id: string;
   incidentCode: string;
@@ -42,7 +48,7 @@ export interface IncidentDetail {
   needRelief: boolean;
   reporter: Reporter;
   location: Location;
-  files: any[];
+  files: IncidentFile[];
   latestAssessment: any;
   reportedAt: string;
   updatedAt: string;

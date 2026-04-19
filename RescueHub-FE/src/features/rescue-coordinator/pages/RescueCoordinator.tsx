@@ -19,6 +19,8 @@ import {
 interface RescueRequest {
   id: string;
   title: string;
+  incidentCode: string;
+  reportedAt: string; // original ISO timestamp for sorting
   location: string;
   requesterPhone: string;
   requesterName: string;
@@ -47,6 +49,7 @@ interface RescueTeam {
 const RescueCoordinatorPage: React.FC = () => {
   const { activeMenu, setActiveMenu } = useCoordinator();
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const [showMapModal, setShowMapModal] = useState(false);
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
@@ -55,6 +58,8 @@ const RescueCoordinatorPage: React.FC = () => {
   const [requests, setRequests] = useState<RescueRequest[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [requestsError, setRequestsError] = useState<string | null>(null);
+  // Cache location info from detail calls so we can show it in list without re-fetching
+  const [detailCache, setDetailCache] = useState<Record<string, IncidentDetail>>({});
 
   const [selectedIncidentDetail, setSelectedIncidentDetail] =
     useState<IncidentDetail | null>(null);
@@ -98,8 +103,10 @@ const RescueCoordinatorPage: React.FC = () => {
 
     return {
       id: incident.id,
+      incidentCode: incident.incidentCode,
+      reportedAt: incident.reportedAt, // keep ISO string for sort
       title: `Sự cố ${incident.incidentCode}`,
-      location: "Chưa có thông tin vị trí",
+      location: "Đang tải vị trí...",
       requesterPhone: "Chưa cập nhật",
       requesterName: "Chưa cập nhật",
       signalChannel: "app",
@@ -196,6 +203,8 @@ const RescueCoordinatorPage: React.FC = () => {
           authSession.accessToken,
         );
         setSelectedIncidentDetail(detail);
+        // Cache location info for display in list
+        setDetailCache(prev => ({ ...prev, [detail.id]: detail }));
       } catch (error) {
         const message =
           error instanceof Error
@@ -272,16 +281,20 @@ const RescueCoordinatorPage: React.FC = () => {
     }
   };
 
-  const filteredRequests = useMemo(
-    () =>
-      requests.filter(
-        (req) =>
-          req.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          req.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          req.id.toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
-    [requests, searchQuery],
-  );
+  const filteredRequests = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return requests
+      .filter((req) => {
+        const matchesSearch =
+          req.title.toLowerCase().includes(q) ||
+          req.id.toLowerCase().includes(q) ||
+          (detailCache[req.id]?.location?.addressText ?? "").toLowerCase().includes(q);
+        const matchesStatus = statusFilter === "" || req.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      })
+      // Sort newest first by reportedAt ISO timestamp
+      .sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime());
+  }, [requests, searchQuery, statusFilter, detailCache]);
 
   const handleVerifyConfirm = async () => {
     if (!selectedRequest) return;
@@ -523,16 +536,37 @@ const RescueCoordinatorPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Pending Requests */}
+                {/* Incident List */}
                 <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4">
-                    Yêu cầu chờ xác minh
-                  </h2>
+                  {/* List Header with filter */}
+                  <div className="flex items-center justify-between mb-4 gap-3">
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">
+                        Danh sách sự cố
+                      </h2>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {filteredRequests.length} / {requests.length} sự cố • Mới nhất trước
+                      </p>
+                    </div>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="border-2 border-gray-200 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 focus:outline-none focus:border-blue-500 bg-white"
+                    >
+                      <option value="">Tất cả trạng thái</option>
+                      <option value="pending">Chờ xác minh</option>
+                      <option value="verified">Đã xác minh</option>
+                      <option value="dispatched">Đã điều phối</option>
+                      <option value="in-progress">Đang xử lý</option>
+                      <option value="completed">Hoàn thành</option>
+                    </select>
+                  </div>
 
                   {isLoadingRequests && (
-                    <p className="text-sm text-gray-600">
-                      Đang tải dữ liệu sự cố...
-                    </p>
+                    <div className="flex items-center gap-3 py-4">
+                      <div className="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+                      <p className="text-sm text-gray-500">Đang tải dữ liệu sự cố...</p>
+                    </div>
                   )}
 
                   {requestsError && (
@@ -549,40 +583,62 @@ const RescueCoordinatorPage: React.FC = () => {
                       </p>
                     )}
 
-                  <div className="space-y-3">
-                    {requests.map((request) => (
-                      <div
-                        key={request.id}
-                        onClick={() => setSelectedRequest(request)}
-                        className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
-                          selectedRequest?.id === request.id
-                            ? "border-black bg-blue-50"
-                            : "border-gray-200 hover:border-blue-950"
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="font-bold text-gray-900">
-                              {request.title}
-                            </h3>
-                            <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
-                              <span className="flex items-center gap-1">
-                                <MapPin size={14} /> {request.location}
-                              </span>
-                              <span>{request.time}</span>
+                  <div className="space-y-2.5">
+                    {filteredRequests.length === 0 && !isLoadingRequests && (
+                      <p className="text-sm text-gray-400 py-6 text-center">
+                        {statusFilter ? "Không có sự cố nào ở trạng thái này." : "Chưa có sự cố nào."}
+                      </p>
+                    )}
+                    {filteredRequests.map((request) => {
+                      const cached = detailCache[request.id];
+                      const locationText = cached?.location?.addressText || null;
+                      const isSelected = selectedRequest?.id === request.id;
+                      return (
+                        <div
+                          key={request.id}
+                          onClick={() => setSelectedRequest(request)}
+                          className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                            isSelected
+                              ? "border-blue-700 bg-blue-50 shadow-sm"
+                              : "border-gray-100 hover:border-blue-200 hover:shadow-sm bg-white"
+                          }`}
+                          style={isSelected ? { borderColor: "var(--color-blue-950)" } : {}}
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-gray-900 text-sm truncate">
+                                  {request.title}
+                                </h3>
+                                {/* SOS badge from cache */}
+                                {cached?.isSOS && (
+                                  <span className="flex-shrink-0 px-1.5 py-0.5 bg-red-600 text-white text-[10px] font-black rounded animate-pulse">SOS</span>
+                                )}
+                              </div>
+                              <div className="flex items-start gap-1 text-xs text-gray-500 mt-1.5">
+                                <MapPin size={12} className="flex-shrink-0 mt-0.5" />
+                                <span className="truncate">
+                                  {locationText ?? "Đang tải vị trí..."}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 mt-2">
+                                <span className="text-xs text-gray-400">{request.time}</span>
+                                {cached?.incidentType?.name && (
+                                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">
+                                    {cached.incidentType.name}
+                                  </span>
+                                )}
+                              </div>
                             </div>
+                            <span
+                              className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold ${getStatusColor(request.status)}`}
+                            >
+                              {getStatusBadge(request.status)}
+                            </span>
                           </div>
-                          <span
-                            className={`px-3 py-1 rounded text-xs font-bold ${getStatusColor(request.status)}`}
-                          >
-                            {getStatusBadge(request.status)}
-                          </span>
                         </div>
-                        <button className="text-cyan-500 hover:text-cyan-600 font-semibold text-sm mt-3">
-                          Xác minh & phân loại →
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </>

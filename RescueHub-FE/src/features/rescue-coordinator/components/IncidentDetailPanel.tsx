@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   MapPin,
   Phone,
@@ -13,6 +13,9 @@ import {
   Navigation,
   FileText,
   Info,
+  ChevronLeft,
+  ChevronRight,
+  ImageOff,
 } from "lucide-react";
 import type { IncidentDetail } from "../services/incidentServices";
 import { IncidentMiniMap } from "./IncidentMiniMap";
@@ -82,6 +85,100 @@ function formatTime(isoDate: string) {
   });
 }
 
+// ─── Image Gallery Component ───────────────────────────────────────────────────
+interface ImageGalleryProps {
+  images: Array<{ fileId: string; url: string }>;
+}
+
+const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
+  const [current, setCurrent] = useState(0);
+  const [errored, setErrored] = useState<Record<number, boolean>>({});
+
+  if (images.length === 0) {
+    return (
+      <div
+        className="relative rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center bg-gray-50"
+        style={{ height: 140 }}
+      >
+        <img
+          src={incidentPlaceholder}
+          alt="Ảnh minh họa"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        <p className="absolute bottom-2 left-3 text-white text-xs font-semibold opacity-80">
+          Chưa có ảnh hiện trường
+        </p>
+      </div>
+    );
+  }
+
+  const prev = () => setCurrent((c) => (c - 1 + images.length) % images.length);
+  const next = () => setCurrent((c) => (c + 1) % images.length);
+  const isErr = errored[current];
+
+  return (
+    <div className="relative rounded-xl overflow-hidden border border-gray-100 shadow-sm" style={{ height: 160 }}>
+      {isErr ? (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 gap-2">
+          <ImageOff size={24} className="text-gray-400" />
+          <p className="text-xs text-gray-400">Không thể tải ảnh</p>
+        </div>
+      ) : (
+        <img
+          key={images[current].fileId}
+          src={images[current].url}
+          alt={`Ảnh hiện trường ${current + 1}`}
+          className="w-full h-full object-cover transition-opacity duration-300"
+          onError={() => setErrored((p) => ({ ...p, [current]: true }))}
+        />
+      )}
+
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+
+      {/* Nav buttons — only if more than 1 image */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={prev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-colors"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button
+            onClick={next}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-colors"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </>
+      )}
+
+      {/* Bottom bar */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 pb-2">
+        <p className="text-white text-xs font-semibold drop-shadow">Ảnh hiện trường</p>
+        {images.length > 1 && (
+          <div className="flex items-center gap-1">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrent(i)}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${
+                  i === current ? "bg-white w-3" : "bg-white/50"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+        <span className="text-white/70 text-[10px] font-mono">
+          {current + 1}/{images.length}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const IncidentDetailPanel: React.FC<IncidentDetailPanelProps> = ({
   detail,
   onVerify,
@@ -134,17 +231,11 @@ export const IncidentDetailPanel: React.FC<IncidentDetailPanelProps> = ({
         </div>
       </div>
 
-      {/* ── Incident Image ── */}
-      <div className="relative mx-5 rounded-xl overflow-hidden shadow-sm border border-gray-100 mb-3" style={{ height: 140 }}>
-        <img
-          src={incidentPlaceholder}
-          alt="Ảnh hiện trường"
-          className="w-full h-full object-cover"
+      {/* ── Incident Image Gallery ── */}
+      <div className="mx-5 mb-3">
+        <ImageGallery
+          images={(detail.files ?? []).filter((f) => f.contentType === "IMAGE")}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        <p className="absolute bottom-2 left-3 text-white text-xs font-semibold opacity-80">
-          Ảnh hiện trường (minh họa)
-        </p>
       </div>
 
       {/* ── Mini Map ── */}
@@ -288,20 +379,20 @@ export const IncidentDetailPanel: React.FC<IncidentDetailPanelProps> = ({
           className="w-full text-white font-bold py-2.5 rounded-xl text-sm transition-all active:scale-95 hover:opacity-90"
           style={{ background: "linear-gradient(135deg, #1e3a5f, #1e40af)" }}
         >
-          ✓ Xác minh thông tin
+           Xác minh thông tin
         </button>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onAssess}
             className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-sm transition-all active:scale-95"
           >
-            📊 Đánh giá mức độ
+             Đánh giá mức độ
           </button>
           <button
             onClick={onDispatch}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all active:scale-95"
           >
-            🚒 Điều phối ngay
+             Điều phối ngay
           </button>
         </div>
       </div>
