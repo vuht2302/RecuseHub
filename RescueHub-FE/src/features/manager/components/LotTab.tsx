@@ -30,7 +30,7 @@ function FormModal({ lot, onClose, onSaved }: { lot?: Lot | null; onClose: () =>
   const [form, setForm] = useState<LotPayload>(lot ? {
     itemId: lot.item?.id ?? "", lotNo: lot.lotNo,
     mfgDate: lot.mfgDate ?? "", expDate: lot.expDate ?? "",
-    donorName: lot.donorName ?? "", statusCode: lot.status?.code ?? "AVAILABLE",
+    donorName: lot.donorName ?? "", statusCode: lot.statusCode || "AVAILABLE",
   } : { ...EMPTY });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -172,7 +172,7 @@ export const LotTab: React.FC = () => {
               <tr><td colSpan={7} className="py-12 text-center"><div className="flex flex-col items-center gap-2"><Box size={32} className="text-gray-300" /><p className="text-gray-400 text-sm">Chưa có lô hàng</p></div></td></tr>
             ) : data.map(lot => (
               <tr key={lot.id} className={`hover:bg-blue-50/30 transition-colors ${isNearExpiry(lot.expDate) ? "bg-amber-50/40" : ""}`}>
-                <td className="px-4 py-3 font-semibold text-gray-800">{lot.item?.itemName || "—"}</td>
+                <td className="px-4 py-3 font-semibold text-gray-800">{lot.item?.name || "—"}</td>
                 <td className="px-4 py-3 font-mono text-xs text-blue-700 font-semibold">{lot.lotNo}</td>
                 <td className="px-4 py-3 text-gray-600 text-xs">{lot.mfgDate ? new Date(lot.mfgDate).toLocaleDateString("vi-VN") : "—"}</td>
                 <td className="px-4 py-3 text-xs">
@@ -182,7 +182,7 @@ export const LotTab: React.FC = () => {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-gray-600">{lot.donorName || "—"}</td>
-                <td className="px-4 py-3">{lotStatusBadge(lot.status?.code ?? "")}</td>
+                <td className="px-4 py-3">{lotStatusBadge(lot.statusCode || "")}</td>
                 <td className="px-4 py-3"><div className="flex gap-1">
                   <button onClick={() => { setEditTarget(lot); setShowForm(true); }} className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600"><Edit2 size={14} /></button>
                   <button onClick={() => setDeleteTarget(lot)} className="p-1.5 rounded-lg hover:bg-red-100 text-red-500"><Trash2 size={14} /></button>

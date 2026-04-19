@@ -1,56 +1,71 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Plus, Eye, X, AlertCircle, PackagePlus, Trash2, CheckCircle } from "lucide-react";
 import {
-  getDistributions, createDistribution, ackDistribution,
-  type Distribution, type DistributionPayload, type DistributionLine, type AckPayload,
+  getDistributions, getDistribution, createDistribution, ackDistribution,
+  type Distribution, type DistributionListItem, type DistributionPayload, type DistributionLine, type AckPayload,
 } from "../services/warehouseService";
 import { getAuthSession } from "../../../features/auth/services/authStorage";
 
 // ─── Detail Modal ──────────────────────────────────────────────────────────────
-function DetailModal({ dist, onClose, onAck }: { dist: Distribution; onClose: () => void; onAck: (d: Distribution) => void }) {
+function DetailModal({ distId, onClose, onAck }: { distId: string; onClose: () => void; onAck: (d: Distribution) => void }) {
+  const [dist, setDist] = useState<Distribution | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getDistribution(distId, getAuthSession()?.accessToken ?? "")
+      .then(setDist)
+      .finally(() => setLoading(false));
+  }, [distId]);
+
   return (
     <div className="fixed inset-0 bg-black/40 z-[200] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div>
-            <h2 className="text-lg font-bold">{dist.distributionCode}</h2>
-            <p className="text-xs text-gray-500">Chiến dịch: {dist.campaign?.name || "—"} • {new Date(dist.createdAt).toLocaleString("vi-VN")}</p>
+            <h2 className="text-lg font-bold">{dist?.code || "Đang tải..."}</h2>
+            {dist && <p className="text-xs text-gray-500">Chiến dịch: {dist.campaign?.name || "—"} • {new Date(dist.createdAt).toLocaleString("vi-VN")}</p>}
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100"><X size={18} /></button>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-xs text-gray-500 block">Hộ dân</span><p className="font-semibold">{dist.household?.headName || "—"}</p></div>
-            <div><span className="text-xs text-gray-500 block">Điểm cứu trợ</span><p className="font-semibold">{dist.reliefPoint?.name || "—"}</p></div>
-            <div>
-              <span className="text-xs text-gray-500 block">Phương thức ACK</span>
-              <p className="font-semibold">{dist.ackMethodCode}</p>
+        {loading ? (
+          <div className="p-12 text-center text-gray-500">Đang tải chi tiết...</div>
+        ) : dist ? (
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><span className="text-xs text-gray-500 block">Hộ dân</span><p className="font-semibold">{dist.household?.headName || "—"}</p></div>
+              <div><span className="text-xs text-gray-500 block">Điểm cứu trợ</span><p className="font-semibold">{dist.reliefPoint?.name || "—"}</p></div>
+              <div>
+                <span className="text-xs text-gray-500 block">Phương thức ACK</span>
+                <p className="font-semibold">{dist.ackMethodCode}</p>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500 block">Mã ACK</span>
+                {dist.ack?.ackCode ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded font-mono text-sm font-bold">{dist.ack.ackCode}</span>
+                ) : <span className="text-gray-400 text-sm">—</span>}
+              </div>
             </div>
+            {dist.ack?.ackCode && dist.status?.code !== "ACKNOWLEDGED" && (
+              <button onClick={() => onAck(dist)} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white font-semibold text-sm" style={{ background: "linear-gradient(135deg,#059669,#10b981)" }}>
+                <CheckCircle size={16} /> Xác nhận đã nhận hàng (ACK)
+              </button>
+            )}
             <div>
-              <span className="text-xs text-gray-500 block">Mã ACK</span>
-              {dist.ackCode ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded font-mono text-sm font-bold">{dist.ackCode}</span>
-              ) : <span className="text-gray-400 text-sm">—</span>}
+              <h3 className="text-sm font-bold mb-2">Dòng hàng ({dist.lines?.length ?? 0})</h3>
+              <div className="rounded-lg border border-gray-100 overflow-hidden">
+                <table className="w-full text-sm"><thead><tr className="bg-gray-50"><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Hàng hóa</th><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Lô</th><th className="px-3 py-2 text-right text-xs font-semibold text-gray-500">SL</th><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">ĐV</th></tr></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {(dist.lines ?? []).map((l, i) => (
+                      <tr key={i}><td className="px-3 py-2 font-medium">{l.item?.name}</td><td className="px-3 py-2 font-mono text-xs">{l.lot?.lotNo || "—"}</td><td className="px-3 py-2 text-right font-bold">{l.qty}</td><td className="px-3 py-2 text-gray-500">{l.unitCode}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-          {dist.ackCode && dist.status?.code !== "ACKNOWLEDGED" && (
-            <button onClick={() => onAck(dist)} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white font-semibold text-sm" style={{ background: "linear-gradient(135deg,#059669,#10b981)" }}>
-              <CheckCircle size={16} /> Xác nhận đã nhận hàng (ACK)
-            </button>
-          )}
-          <div>
-            <h3 className="text-sm font-bold mb-2">Dòng hàng ({dist.lines?.length ?? 0})</h3>
-            <div className="rounded-lg border border-gray-100 overflow-hidden">
-              <table className="w-full text-sm"><thead><tr className="bg-gray-50"><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Hàng hóa</th><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Lô</th><th className="px-3 py-2 text-right text-xs font-semibold text-gray-500">SL</th><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">ĐV</th></tr></thead>
-                <tbody className="divide-y divide-gray-50">
-                  {(dist.lines ?? []).map((l, i) => (
-                    <tr key={i}><td className="px-3 py-2 font-medium">{l.item?.itemName}</td><td className="px-3 py-2 font-mono text-xs">{l.lot?.lotNo || "—"}</td><td className="px-3 py-2 text-right font-bold">{l.qty}</td><td className="px-3 py-2 text-gray-500">{l.unitCode}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        ) : (
+          <div className="p-12 text-center text-red-500">Không tìm thấy thông tin.</div>
+        )}
       </div>
     </div>
   );
@@ -81,10 +96,10 @@ function AckModal({ dist, onClose, onDone }: { dist: Distribution; onClose: () =
           <h2 className="text-lg font-bold">Xác nhận nhận hàng</h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100"><X size={18} /></button>
         </div>
-        {dist.ackCode && (
+        {dist.ack?.ackCode && (
           <div className="mx-6 mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
             <CheckCircle size={20} className="text-emerald-600 flex-shrink-0" />
-            <div><p className="text-xs text-emerald-700 font-semibold">Mã xác nhận (ACK Code)</p><p className="text-2xl font-black font-mono text-emerald-800 tracking-widest">{dist.ackCode}</p></div>
+            <div><p className="text-xs text-emerald-700 font-semibold">Mã xác nhận (ACK Code)</p><p className="text-2xl font-black font-mono text-emerald-800 tracking-widest">{dist.ack.ackCode}</p></div>
           </div>
         )}
         <div className="p-6 space-y-3">
@@ -223,10 +238,10 @@ function statusBadge(code: string) {
 
 // ─── Main Tab ─────────────────────────────────────────────────────────────────
 export const DistributionTab: React.FC = () => {
-  const [data, setData] = useState<Distribution[]>([]);
+  const [data, setData] = useState<DistributionListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewDist, setViewDist] = useState<Distribution | null>(null);
+  const [viewDistId, setViewDistId] = useState<string | null>(null);
   const [ackDist, setAckDist] = useState<Distribution | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
@@ -253,7 +268,7 @@ export const DistributionTab: React.FC = () => {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
-              {["Mã phiếu", "Hộ dân", "Chiến dịch", "ACK", "Mã ACK", "Trạng thái", "Ngày tạo", ""].map(h => (
+              {["Mã phiếu", "Hộ dân", "Chiến dịch", "Phương thức", "Trạng thái", "Số dòng", "Ngày tạo", ""].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -265,21 +280,16 @@ export const DistributionTab: React.FC = () => {
               <tr><td colSpan={8} className="py-12 text-center"><div className="flex flex-col items-center gap-2"><PackagePlus size={32} className="text-gray-300" /><p className="text-gray-400 text-sm">Chưa có phiếu phân phối</p></div></td></tr>
             ) : data.map(dist => (
               <tr key={dist.id} className="hover:bg-blue-50/30 transition-colors">
-                <td className="px-4 py-3 font-mono text-xs text-blue-700 font-semibold whitespace-nowrap">{dist.distributionCode}</td>
+                <td className="px-4 py-3 font-mono text-xs text-blue-700 font-semibold whitespace-nowrap">{dist.code}</td>
                 <td className="px-4 py-3 text-gray-800 font-medium whitespace-nowrap">{dist.household?.headName || "—"}</td>
                 <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{dist.campaign?.name || "—"}</td>
                 <td className="px-4 py-3 text-gray-600 text-xs">{dist.ackMethodCode}</td>
-                <td className="px-4 py-3">
-                  {dist.ackCode ? <span className="font-mono text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold">{dist.ackCode}</span> : <span className="text-gray-400 text-xs">—</span>}
-                </td>
                 <td className="px-4 py-3">{statusBadge(dist.status?.code ?? "PENDING")}</td>
+                <td className="px-4 py-3 text-center font-bold text-gray-700">{dist.lineCount ?? 0}</td>
                 <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{new Date(dist.createdAt).toLocaleDateString("vi-VN")}</td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-1">
-                    <button onClick={() => setViewDist(dist)} className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600"><Eye size={14} /></button>
-                    {dist.ackCode && dist.status?.code !== "ACKNOWLEDGED" && (
-                      <button onClick={() => setAckDist(dist)} className="p-1.5 rounded-lg hover:bg-emerald-100 text-emerald-600"><CheckCircle size={14} /></button>
-                    )}
+                  <div className="flex gap-1 justify-end">
+                    <button onClick={() => setViewDistId(dist.id)} className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600"><Eye size={14} /></button>
                   </div>
                 </td>
               </tr>
@@ -287,7 +297,7 @@ export const DistributionTab: React.FC = () => {
           </tbody>
         </table>
       </div>
-      {viewDist && <DetailModal dist={viewDist} onClose={() => setViewDist(null)} onAck={d => { setViewDist(null); setAckDist(d); }} />}
+      {viewDistId && <DetailModal distId={viewDistId} onClose={() => setViewDistId(null)} onAck={d => { setViewDistId(null); setAckDist(d); }} />}
       {ackDist && <AckModal dist={ackDist} onClose={() => setAckDist(null)} onDone={() => { setAckDist(null); void load(); }} />}
       {showCreate && <CreateModal onClose={() => setShowCreate(false)} onSaved={handleCreated} />}
     </div>

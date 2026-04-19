@@ -222,13 +222,13 @@ export async function deleteItem(id: string, token: string): Promise<void> {
 // ─── MAN-04  Lot ──────────────────────────────────────────────────────────────
 export interface Lot {
   id: string;
-  item: { id: string; itemCode: string; itemName: string };
+  item: { id: string; code: string; name: string; unitCode?: string };
   lotNo: string;
   mfgDate: string | null;
   expDate: string | null;
   donorName: string | null;
-  status: CodeName;
-  createdAt: string;
+  statusCode: string;
+  receivedAt: string;
 }
 
 export interface LotPayload {
@@ -292,16 +292,31 @@ export interface StockTransactionPayload {
   lines: TransactionLine[];
 }
 
+export interface StockTransactionListItem {
+  id: string;
+  code: string;
+  transactionTypeCode: string;
+  warehouse: { id: string; code: string; name: string };
+  referenceType: string;
+  referenceId: string | null;
+  happenedAt: string;
+  note: string;
+  lineCount: number;
+  createdAt: string;
+}
+
 export interface StockTransaction {
   id: string;
-  transactionCode: string;
-  transactionType: CodeName;
-  warehouse: { id: string; warehouseName: string };
+  code: string;
+  transactionTypeCode: string;
+  warehouse: { id: string; code: string; name: string };
   referenceType: string;
+  referenceId: string | null;
   happenedAt: string;
   note: string;
   lines: Array<{
-    item: { id: string; itemCode: string; itemName: string };
+    id: string;
+    item: { id: string; code: string; name: string };
     lot: { id: string; lotNo: string } | null;
     qty: number;
     unitCode: string;
@@ -311,14 +326,14 @@ export interface StockTransaction {
 
 export async function getStockTransactions(
   token: string,
-): Promise<StockTransaction[]> {
-  const data = await apiFetch<StockTransaction[] | PagedResponse<StockTransaction>>(
+): Promise<StockTransactionListItem[]> {
+  const data = await apiFetch<StockTransactionListItem[] | PagedResponse<StockTransactionListItem>>(
     `${BASE}/stock-transactions`,
     { headers: authHeaders(token) },
   );
   return Array.isArray(data)
     ? data
-    : (data as PagedResponse<StockTransaction>).items;
+    : (data as PagedResponse<StockTransactionListItem>).items;
 }
 
 export async function getStockTransaction(
@@ -511,22 +526,43 @@ export interface DistributionPayload {
   lines: DistributionLine[];
 }
 
+export interface DistributionListItem {
+  id: string;
+  code: string;
+  status: CodeName;
+  campaign: { id: string; code: string; name: string } | null;
+  reliefPoint: { id: string; code: string; name: string } | null;
+  household: { id: string; code: string; headName: string } | null;
+  ackMethodCode: string;
+  note: string;
+  lineCount: number;
+  createdAt: string;
+}
+
 export interface Distribution {
   id: string;
-  distributionCode: string;
-  campaign: { id: string; name: string } | null;
-  reliefPoint: { id: string; name: string } | null;
-  household: { id: string; headName: string } | null;
-  ackMethodCode: string;
-  ackCode: string | null;
+  code: string;
   status: CodeName;
+  campaign: { id: string; code: string; name: string } | null;
+  reliefPoint: { id: string; code: string; name: string } | null;
+  household: { id: string; code: string; headName: string } | null;
+  ackMethodCode: string;
   note: string;
   lines: Array<{
-    item: { id: string; itemCode: string; itemName: string };
+    id: string;
+    item: { id: string; code: string; name: string };
     lot: { id: string; lotNo: string } | null;
     qty: number;
     unitCode: string;
   }>;
+  ack: {
+    ackMethodCode: string | null;
+    ackCode: string | null;
+    ackByName: string | null;
+    ackPhone: string | null;
+    ackNote: string | null;
+    ackAt: string | null;
+  } | null;
   createdAt: string;
 }
 
@@ -538,14 +574,14 @@ export interface AckPayload {
   ackNote: string;
 }
 
-export async function getDistributions(token: string): Promise<Distribution[]> {
-  const data = await apiFetch<Distribution[] | PagedResponse<Distribution>>(
+export async function getDistributions(token: string): Promise<DistributionListItem[]> {
+  const data = await apiFetch<DistributionListItem[] | PagedResponse<DistributionListItem>>(
     `${BASE}/distributions`,
     { headers: authHeaders(token) },
   );
   return Array.isArray(data)
     ? data
-    : (data as PagedResponse<Distribution>).items;
+    : (data as PagedResponse<DistributionListItem>).items;
 }
 
 export async function getDistribution(
