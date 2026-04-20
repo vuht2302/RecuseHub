@@ -751,8 +751,10 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             .Select(x => new
             {
                 x.id,
+                x.code,
                 x.status_code,
                 x.created_at,
+                x.address_text,
                 adminAreaId = x.admin_area_id,
                 adminAreaCode = x.admin_area != null ? x.admin_area.code : null,
                 adminAreaName = x.admin_area != null ? x.admin_area.name : null,
@@ -793,7 +795,21 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
                         {
                             lat = Math.Round(points.Average(x => x.lat!.Value), 6),
                             lng = Math.Round(points.Average(x => x.lng!.Value), 6)
-                        }
+                        },
+                    sampleLocations = group
+                        .Where(x => x.lat.HasValue && x.lng.HasValue)
+                        .OrderByDescending(x => x.created_at)
+                        .Take(5)
+                        .Select(x => new
+                        {
+                            reliefRequestId = x.id,
+                            requestCode = x.code,
+                            lat = Math.Round(x.lat!.Value, 6),
+                            lng = Math.Round(x.lng!.Value, 6),
+                            addressText = x.address_text,
+                            requestedAt = x.created_at
+                        })
+                        .ToList()
                 };
             })
             .OrderByDescending(x => x.requestCount)
@@ -828,6 +844,7 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             .ThenInclude(x => x.item)
             .Include(x => x.linked_incident)
             .Include(x => x.campaign)
+            .Include(x => x.admin_area)
             .AsQueryable();
 
         var normalizedStatusCode = string.IsNullOrWhiteSpace(statusCode)
@@ -865,6 +882,20 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
                 },
                 householdCount = x.household_count,
                 addressText = x.address_text,
+                location = new
+                {
+                    lat = x.geom == null ? (double?)null : x.geom.Y,
+                    lng = x.geom == null ? (double?)null : x.geom.X,
+                    addressText = x.address_text,
+                    adminArea = x.admin_area == null
+                        ? null
+                        : new
+                        {
+                            id = x.admin_area.id,
+                            code = x.admin_area.code,
+                            name = x.admin_area.name
+                        }
+                },
                 incident = x.linked_incident_id == null
                     ? null
                     : new
@@ -917,6 +948,7 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             .ThenInclude(x => x.item)
             .Include(x => x.linked_incident)
             .Include(x => x.campaign)
+            .Include(x => x.admin_area)
             .FirstOrDefaultAsync(x => x.id == reliefRequestId);
 
         if (reliefRequest is null)
@@ -954,6 +986,20 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             },
             householdCount = reliefRequest.household_count,
             addressText = reliefRequest.address_text,
+            location = new
+            {
+                lat = reliefRequest.geom == null ? (double?)null : reliefRequest.geom.Y,
+                lng = reliefRequest.geom == null ? (double?)null : reliefRequest.geom.X,
+                addressText = reliefRequest.address_text,
+                adminArea = reliefRequest.admin_area == null
+                    ? null
+                    : new
+                    {
+                        id = reliefRequest.admin_area.id,
+                        code = reliefRequest.admin_area.code,
+                        name = reliefRequest.admin_area.name
+                    }
+            },
             note = reliefRequest.note,
             incident = reliefRequest.linked_incident_id == null
                 ? null
