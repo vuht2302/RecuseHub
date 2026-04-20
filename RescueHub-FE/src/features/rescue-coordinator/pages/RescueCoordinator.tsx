@@ -7,6 +7,8 @@ import { VerificationModal } from "../components/VerificationModal";
 import { SeverityAssessmentModal } from "../components/SeverityAssessmentModal";
 import { CurrentMissionsSection } from "../components/CurrentMissionsSection";
 import { MissionMapSection } from "../components/MissionMapSection";
+import { ReliefHotspotMap } from "../components/ReliefHotspotMap";
+import { ReliefRequestsPage } from "../pages/ReliefRequestsPage";
 import { IncidentDetailPanel } from "../components/IncidentDetailPanel";
 import { TeamManagementSection } from "../components/TeamManagementSection";
 import {
@@ -452,20 +454,24 @@ const RescueCoordinatorPage: React.FC = () => {
         {/* Content Area */}
         <div
           className={`${
-            activeMenu === "map" || activeMenu === "current" || activeMenu === "teams"
+            activeMenu === "map" || activeMenu === "hotspot" || activeMenu === "relief-requests" || activeMenu === "current" || activeMenu === "teams"
               ? "grid grid-cols-1 gap-6"
               : "grid grid-cols-3 gap-6"
-          } ${activeMenu === "map" || activeMenu === "current" ? "h-screen" : ""}`}
+          } ${activeMenu === "map" || activeMenu === "hotspot" || activeMenu === "relief-requests" || activeMenu === "current" ? "h-screen" : ""}`}
         >
           {/* Main Content */}
           <div
             className={`${
-              activeMenu === "map" || activeMenu === "teams" ? "col-span-1 h-full" : "col-span-2"
+              activeMenu === "map" || activeMenu === "hotspot" || activeMenu === "teams" ? "col-span-1 h-full" : "col-span-2"
             } space-y-6`}
-          >
-            {activeMenu === "map" && <MissionMapSection />}
+        >
+          {activeMenu === "map" && <MissionMapSection />}
 
-            {activeMenu === "overview" && (
+          {activeMenu === "hotspot" && <ReliefHotspotMap className="flex-1" />}
+
+          {activeMenu === "relief-requests" && <ReliefRequestsPage className="flex-1" />}
+
+          {activeMenu === "overview" && (
               <>
                 {/* Stats */}
                 <div className="grid grid-cols-4 gap-4">
@@ -669,7 +675,7 @@ const RescueCoordinatorPage: React.FC = () => {
           </div>
 
           {/* Right Panel - Incident Detail */}
-          {activeMenu !== "current" && activeMenu !== "map" && activeMenu !== "teams" && (
+          {activeMenu !== "current" && activeMenu !== "map" && activeMenu !== "hotspot" && activeMenu !== "relief-requests" && activeMenu !== "teams" && (
             <div
               className="bg-white rounded-xl shadow-sm border border-gray-100 sticky top-6 overflow-hidden"
               style={{
