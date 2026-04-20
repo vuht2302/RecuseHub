@@ -71,14 +71,25 @@ export const TopBar: React.FC = () => {
             RescueHub
           </Link>
           <div className="hidden md:flex items-center gap-8 tracking-tight">
-            <NavLink
-              to="/"
-              end
-              className={getNavClassName}
-              style={{ fontFamily: "var(--font-primary)" }}
-            >
-              Trang chủ
-            </NavLink>
+            {!authSession && (
+              <NavLink
+                to="/"
+                end
+                className={getNavClassName}
+                style={{ fontFamily: "var(--font-primary)" }}
+              >
+                Trang chủ
+              </NavLink>
+            )}
+            {authSession && (
+              <NavLink
+                to="/citizen"
+                className={getNavClassName}
+                style={{ fontFamily: "var(--font-primary)" }}
+              >
+                Công dân
+              </NavLink>
+            )}
             <NavLink
               to="/track"
               className={getNavClassName}
@@ -100,14 +111,14 @@ export const TopBar: React.FC = () => {
           {authSession && (
             <>
               <Link
-                to="/home?relief=1"
+                to="/citizen?relief=1"
                 className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold transition-all active:scale-95 text-sm"
                 style={{ fontFamily: "var(--font-primary)" }}
               >
                 Yêu cầu cứu trợ
               </Link>
               <Link
-                to="/home?request=1"
+                to="/citizen?request=1"
                 className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2 rounded-lg font-bold transition-all active:scale-95 text-sm"
                 style={{ fontFamily: "var(--font-primary)" }}
               >

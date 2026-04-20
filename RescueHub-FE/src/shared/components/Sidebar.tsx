@@ -2,6 +2,7 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   House,
+  LifeBuoy,
   Send,
   LayoutDashboard,
   Package,
@@ -16,6 +17,7 @@ import {
   Users,
   Rocket,
   Map,
+  History,
   FolderKanban,
   UserRound,
   BookText,
@@ -141,6 +143,46 @@ const rescueTeamMenuItems: RescueTeamMenuItem[] = [
   { icon: Map, label: "Bản đồ nhiệm vụ", id: "map" },
   { icon: FolderKanban, label: "Nhiệm vụ", id: "missions" },
   { icon: UserRound, label: "Trạng thái đội ngũ", id: "team" },
+];
+
+interface CitizenMenuItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  href: string;
+}
+
+const citizenMenuItems: CitizenMenuItem[] = [
+  {
+    id: "overview",
+    label: "Trung tâm công dân",
+    icon: House,
+    href: "/citizen",
+  },
+  {
+    id: "rescue-request",
+    label: "Gửi tín hiệu SOS",
+    icon: Send,
+    href: "/citizen?request=1",
+  },
+  {
+    id: "relief-request",
+    label: "Yêu cầu cứu trợ",
+    icon: LifeBuoy,
+    href: "/citizen?relief=1",
+  },
+  {
+    id: "rescue-history",
+    label: "Lịch sử cứu hộ",
+    icon: History,
+    href: "/citizen#history-rescue",
+  },
+  {
+    id: "relief-history",
+    label: "Lịch sử cứu trợ",
+    icon: LifeBuoy,
+    href: "/citizen#history-relief",
+  },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -412,6 +454,99 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* Logout */}
+        <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="w-full flex items-center justify-center gap-2 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-60 transition-colors text-sm font-semibold"
+          >
+            <LogOut size={16} />
+            {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
+  if (pathSegment === "citizen") {
+    const currentPath = `${location.pathname}${location.search}${location.hash}`;
+
+    const isCitizenItemActive = (href: string) => {
+      if (href === "/citizen") {
+        return (
+          location.pathname === "/citizen" && !location.search && !location.hash
+        );
+      }
+
+      return currentPath.startsWith(href);
+    };
+
+    return (
+      <aside
+        className="fixed left-0 top-0 w-64 h-screen bg-white shadow-lg flex flex-col border-r border-gray-200"
+        style={{ fontFamily: "var(--font-primary)" }}
+      >
+        <div className="p-6 border-b border-gray-200">
+          <h1
+            className="text-2xl font-black"
+            style={{ color: "var(--color-blue-950)" }}
+          >
+            RescueHub
+          </h1>
+          <p className="text-xs text-gray-600 mt-1">Cổng dịch vụ công dân</p>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-2">
+          {citizenMenuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = isCitizenItemActive(item.href);
+            return (
+              <button
+                key={item.id}
+                onClick={() => navigate(item.href)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                  isActive ? "bg-blue-50 shadow-sm" : "hover:bg-gray-50"
+                }`}
+              >
+                <Icon
+                  size={20}
+                  className={isActive ? "text-blue-600" : "text-gray-600"}
+                />
+                <span
+                  className={`text-sm font-semibold flex-1 text-left ${
+                    isActive
+                      ? "text-blue-950"
+                      : "text-gray-700 hover:text-gray-900"
+                  }`}
+                  style={isActive ? { color: "var(--color-blue-950)" } : {}}
+                >
+                  {item.label}
+                </span>
+                {isActive && (
+                  <ChevronRight
+                    size={16}
+                    style={{ color: "var(--color-blue-950)" }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={() => navigate("/citizen?request=1")}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg text-white font-bold transition-all hover:shadow-lg"
+            style={{
+              backgroundColor: "var(--color-blue-950)",
+              fontFamily: "var(--font-primary)",
+            }}
+          >
+            <Send size={18} />
+            Gửi SOS nhanh
+          </button>
+        </div>
+
         <div className="p-4 border-t border-gray-200">
           <button
             onClick={handleLogout}
