@@ -20,6 +20,8 @@ import { RescueCoordinator } from "../features/rescue-coordinator/pages/RescueCo
 import ManagerDashboard from "../features/manager/pages/dashboard";
 import { AdminPage } from "../features/admin/pages/AdminPage";
 import { CitizenPage } from "../features/citizen/pages/CitizenPage";
+import { CitizenHistoryPage } from "../features/citizen/pages/CitizenHistoryPage";
+import { CitizenProfilePage } from "../features/citizen/pages/CitizenProfilePage";
 import { getDefaultRouteForRoles } from "../features/auth/services/authService";
 import {
   getAuthSession,
@@ -156,15 +158,30 @@ export default function App() {
 
   if (isCitizenRoute) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Sidebar />
-        <div className="ml-64 p-4 md:p-8">
-          <Routes>
-            <Route path="/citizen" element={<CitizenPage />} />
-            <Route path="*" element={<Navigate to="/citizen" replace />} />
-          </Routes>
+      <>
+        <div className="min-h-screen bg-gray-50">
+          <Sidebar />
+          <div className="ml-64 p-4 md:p-8">
+            <Routes>
+              <Route path="/citizen" element={<CitizenPage />} />
+              <Route path="/citizen/history" element={<CitizenHistoryPage />} />
+              <Route path="/citizen/profile" element={<CitizenProfilePage />} />
+              <Route path="*" element={<Navigate to="/citizen" replace />} />
+            </Routes>
+          </div>
         </div>
-      </div>
+        <ToastContainer
+          position="top-right"
+          autoClose={4000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
+      </>
     );
   }
 

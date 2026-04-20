@@ -27,7 +27,10 @@ import {
 import { useManager } from "../context/ManagerContext";
 import { useCoordinator } from "../context/CoordinatorContext";
 import { useRescueTeam } from "../context/RescueTeamContext";
-import { performLogout } from "../../features/auth/services/authStorage";
+import {
+  getAuthSession,
+  performLogout,
+} from "../../features/auth/services/authStorage";
 
 // Manager Menu Items
 interface ManagerMenuItem {
@@ -155,33 +158,22 @@ interface CitizenMenuItem {
 const citizenMenuItems: CitizenMenuItem[] = [
   {
     id: "overview",
-    label: "Trung tâm công dân",
+    label: "Trung tâm bản đồ",
     icon: House,
     href: "/citizen",
   },
-  {
-    id: "rescue-request",
-    label: "Gửi tín hiệu SOS",
-    icon: Send,
-    href: "/citizen?request=1",
-  },
-  {
-    id: "relief-request",
-    label: "Yêu cầu cứu trợ",
-    icon: LifeBuoy,
-    href: "/citizen?relief=1",
-  },
-  {
-    id: "rescue-history",
-    label: "Lịch sử cứu hộ",
-    icon: History,
-    href: "/citizen#history-rescue",
-  },
+
   {
     id: "relief-history",
-    label: "Lịch sử cứu trợ",
+    label: "Lịch sử",
     icon: LifeBuoy,
-    href: "/citizen#history-relief",
+    href: "/citizen/history#history-relief",
+  },
+  {
+    id: "profile",
+    label: "Hồ sơ cá nhân",
+    icon: UserRound,
+    href: "/citizen/profile",
   },
 ];
 
@@ -189,6 +181,7 @@ export const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const authSession = getAuthSession();
   const pathSegment = location.pathname.split("/")[1];
 
   const handleLogout = async () => {
@@ -470,6 +463,7 @@ export const Sidebar: React.FC = () => {
 
   if (pathSegment === "citizen") {
     const currentPath = `${location.pathname}${location.search}${location.hash}`;
+    const displayName = authSession?.user.displayName?.trim() || "Công dân";
 
     const isCitizenItemActive = (href: string) => {
       if (href === "/citizen") {
@@ -534,28 +528,22 @@ export const Sidebar: React.FC = () => {
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={() => navigate("/citizen?request=1")}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg text-white font-bold transition-all hover:shadow-lg"
-            style={{
-              backgroundColor: "var(--color-blue-950)",
-              fontFamily: "var(--font-primary)",
-            }}
-          >
-            <Send size={18} />
-            Gửi SOS nhanh
-          </button>
-        </div>
-
-        <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="w-full flex items-center justify-center gap-2 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-60 transition-colors text-sm font-semibold"
-          >
-            <LogOut size={16} />
-            {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
-          </button>
+          <div className="flex items-center justify-between gap-3">
+            <p
+              className="text-sm font-semibold text-slate-800 truncate"
+              title={displayName}
+            >
+              {displayName}
+            </p>
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="inline-flex items-center justify-center gap-2 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-60 transition-colors text-sm font-semibold"
+            >
+              <LogOut size={16} />
+              {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
+            </button>
+          </div>
         </div>
       </aside>
     );

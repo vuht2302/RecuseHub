@@ -241,6 +241,53 @@ export interface PublicTrackingMyHistoryResponse {
   pageSize?: number;
 }
 
+export interface PublicMeHistoryStatus {
+  code?: string;
+  name?: string;
+  color?: string | null;
+}
+
+export interface PublicMeHistoryRescueItem {
+  incidentId?: string;
+  incidentCode?: string;
+  trackingCode?: string;
+  incidentTypeCode?: string;
+  status?: PublicMeHistoryStatus;
+  description?: string;
+  location?: {
+    lat?: number;
+    lng?: number;
+    addressText?: string;
+    landmark?: string;
+  };
+  reportedAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+export interface PublicMeHistoryReliefItem {
+  reliefRequestId?: string;
+  requestCode?: string;
+  status?: PublicMeHistoryStatus;
+  householdCount?: number;
+  note?: string;
+  requestedAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+export interface PublicMeHistoryList<TItem> {
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  items: TItem[];
+}
+
+export interface PublicMeHistoryData {
+  rescues: PublicMeHistoryList<PublicMeHistoryRescueItem>;
+  reliefRequests: PublicMeHistoryList<PublicMeHistoryReliefItem>;
+}
+
 export interface PublicAckRequest {
   ackMethodCode: string;
   ackCode: string;

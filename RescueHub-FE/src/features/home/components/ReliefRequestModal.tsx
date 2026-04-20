@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, Send, Trash2, X } from "lucide-react";
+import { toast } from "react-toastify";
 import {
   createPublicReliefRequest,
   type PublicReliefRequest,
@@ -14,6 +15,9 @@ type ReliefRequestItemInput = {
 interface ReliefRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultRequesterName?: string;
+  defaultRequesterPhone?: string;
+  lockRequesterInfo?: boolean;
 }
 
 const createEmptyItem = (): ReliefRequestItemInput => ({
@@ -25,6 +29,9 @@ const createEmptyItem = (): ReliefRequestItemInput => ({
 export const ReliefRequestModal: React.FC<ReliefRequestModalProps> = ({
   isOpen,
   onClose,
+  defaultRequesterName,
+  defaultRequesterPhone,
+  lockRequesterInfo = false,
 }) => {
   const [requesterName, setRequesterName] = useState("");
   const [requesterPhone, setRequesterPhone] = useState("");
@@ -36,6 +43,15 @@ export const ReliefRequestModal: React.FC<ReliefRequestModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setRequesterName(defaultRequesterName?.trim() ?? "");
+    setRequesterPhone(defaultRequesterPhone?.trim() ?? "");
+  }, [defaultRequesterName, defaultRequesterPhone, isOpen]);
 
   if (!isOpen) {
     return null;
@@ -101,17 +117,21 @@ export const ReliefRequestModal: React.FC<ReliefRequestModalProps> = ({
       setSubmitSuccess(
         `Đã tạo yêu cầu cứu trợ thành công. Mã theo dõi: ${response.requestCode}`,
       );
-      setRequesterName("");
-      setRequesterPhone("");
+      toast.success(
+        `Đã tạo yêu cầu cứu trợ thành công. Mã theo dõi: ${response.requestCode}`,
+      );
+      setRequesterName(defaultRequesterName?.trim() ?? "");
+      setRequesterPhone(defaultRequesterPhone?.trim() ?? "");
       setHouseholdCount(1);
       setNote("");
       setItems([createEmptyItem()]);
     } catch (error) {
-      setSubmitError(
+      const message =
         error instanceof Error
           ? error.message
-          : "Tạo yêu cầu cứu trợ thất bại.",
-      );
+          : "Tạo yêu cầu cứu trợ thất bại.";
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -148,6 +168,7 @@ export const ReliefRequestModal: React.FC<ReliefRequestModalProps> = ({
               <input
                 value={requesterName}
                 onChange={(event) => setRequesterName(event.target.value)}
+                readOnly={lockRequesterInfo}
                 className="w-full bg-surface-container-high border-none rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary"
                 placeholder="Nhập họ tên"
               />
@@ -159,6 +180,7 @@ export const ReliefRequestModal: React.FC<ReliefRequestModalProps> = ({
               <input
                 value={requesterPhone}
                 onChange={(event) => setRequesterPhone(event.target.value)}
+                readOnly={lockRequesterInfo}
                 className="w-full bg-surface-container-high border-none rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary"
                 placeholder="Nhập số điện thoại"
               />

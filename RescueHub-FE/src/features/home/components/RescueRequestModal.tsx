@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { X, Camera, Trash2, Send } from "lucide-react";
+import { toast } from "react-toastify";
 import {
   createPublicIncident,
   getPublicRescueForm,
@@ -23,6 +24,9 @@ interface RescueRequestModalProps {
   onClose: () => void;
   defaultLocation: Coordinate;
   defaultAddress?: string;
+  defaultReporterName?: string;
+  defaultReporterPhone?: string;
+  lockReporterInfo?: boolean;
   onSubmitted?: (trackingCode: string) => void;
 }
 
@@ -31,6 +35,9 @@ export const RescueRequestModal: React.FC<RescueRequestModalProps> = ({
   onClose,
   defaultLocation,
   defaultAddress,
+  defaultReporterName,
+  defaultReporterPhone,
+  lockReporterInfo = false,
   onSubmitted,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -83,6 +90,12 @@ export const RescueRequestModal: React.FC<RescueRequestModalProps> = ({
     if (!isOpen) return;
     setAddressText(defaultAddress ?? "");
   }, [defaultAddress, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setReporterName(defaultReporterName?.trim() ?? "");
+    setReporterPhone(defaultReporterPhone?.trim() ?? "");
+  }, [defaultReporterName, defaultReporterPhone, isOpen]);
 
   const filePreviews = useMemo(
     () =>
@@ -253,12 +266,16 @@ export const RescueRequestModal: React.FC<RescueRequestModalProps> = ({
         fileIds: uploadedFileIds,
       });
 
+      toast.success(
+        `Đã tạo yêu cầu cứu hộ thành công. Mã theo dõi: ${response.trackingCode}`,
+      );
       onSubmitted?.(response.trackingCode);
       onClose();
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : "Gửi yêu cầu thất bại",
-      );
+      const message =
+        error instanceof Error ? error.message : "Gửi yêu cầu thất bại";
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -316,6 +333,7 @@ export const RescueRequestModal: React.FC<RescueRequestModalProps> = ({
               <input
                 value={reporterName}
                 onChange={(event) => setReporterName(event.target.value)}
+                readOnly={lockReporterInfo}
                 className="w-full bg-surface-container-high border-none rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary"
                 placeholder="Nhập họ tên"
               />
@@ -327,6 +345,7 @@ export const RescueRequestModal: React.FC<RescueRequestModalProps> = ({
               <input
                 value={reporterPhone}
                 onChange={(event) => setReporterPhone(event.target.value)}
+                readOnly={lockReporterInfo}
                 className="w-full bg-surface-container-high border-none rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary"
                 placeholder="Nhập số điện thoại"
               />
