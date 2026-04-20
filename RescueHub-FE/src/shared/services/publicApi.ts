@@ -6,6 +6,9 @@ import type {
   PublicAlertsData,
   PublicIncidentRequest,
   PublicIncidentResponse,
+  PublicMeHistoryData,
+  PublicMeHistoryReliefItem,
+  PublicMeHistoryRescueItem,
   PublicMapData,
   PublicReliefRequest,
   PublicReliefResponse,
@@ -33,6 +36,9 @@ export type {
   PublicIncidentRequest,
   PublicSosRequest,
   PublicIncidentResponse,
+  PublicMeHistoryData,
+  PublicMeHistoryReliefItem,
+  PublicMeHistoryRescueItem,
   PublicReliefRequestItem,
   PublicReliefRequest,
   PublicReliefResponse,
@@ -312,4 +318,18 @@ export const getPublicTrackingMyReliefRequests = async ({
       },
     },
   );
+};
+
+export const getPublicMeHistory = async (
+  accessToken?: string,
+): Promise<PublicMeHistoryData> => {
+  return requestPublicApi<PublicMeHistoryData>("/api/v1/public/me/history", {
+    headers: {
+      ...(accessToken?.trim()
+        ? {
+            Authorization: `Bearer ${accessToken.trim()}`,
+          }
+        : {}),
+    },
+  });
 };

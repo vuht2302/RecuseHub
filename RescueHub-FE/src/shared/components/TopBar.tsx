@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { LogOut, Settings, UserCircle } from "lucide-react";
 import { LoginModal } from "../../features/auth/components/LoginModal";
 import { SignupModal } from "../../features/auth/components/SignupModal";
@@ -10,10 +10,14 @@ import {
 
 export const TopBar: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [authSession, setAuthSession] = useState(getAuthSession());
+  const isCitizenRoute = location.pathname.startsWith("/citizen");
+  const isHomeRoute =
+    location.pathname === "/" || location.pathname === "/home";
 
   useEffect(() => {
     const refreshAuthState = () => setAuthSession(getAuthSession());
@@ -143,7 +147,7 @@ export const TopBar: React.FC = () => {
                 <Settings size={24} />
               </button>
             </div>
-          ) : (
+          ) : !isCitizenRoute && isHomeRoute ? (
             <div className="flex items-center gap-3">
               <div className="hidden md:block text-right">
                 <p className="text-sm font-semibold text-white leading-tight">
@@ -163,7 +167,7 @@ export const TopBar: React.FC = () => {
                 <span>{isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}</span>
               </button>
             </div>
-          )}
+          ) : null}
         </div>
       </nav>
 
