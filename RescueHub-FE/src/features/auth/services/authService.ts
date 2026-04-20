@@ -57,5 +57,5 @@ export const getDefaultRouteForRoles = (roles: InternalRole[]): string => {
   }
 
   // Citizen has empty roles by default.
-  return "/home";
+  return "/citizen";
 };

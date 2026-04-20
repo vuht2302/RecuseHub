@@ -19,6 +19,7 @@ import { RescueTeamMission } from "../features/rescueTeam/pages/RescueTeamMissio
 import { RescueCoordinator } from "../features/rescue-coordinator/pages/RescueCoordinator";
 import ManagerDashboard from "../features/manager/pages/dashboard";
 import { AdminPage } from "../features/admin/pages/AdminPage";
+import { CitizenPage } from "../features/citizen/pages/CitizenPage";
 import { getDefaultRouteForRoles } from "../features/auth/services/authService";
 import {
   getAuthSession,
@@ -28,15 +29,41 @@ import {
 export default function App() {
   const location = useLocation();
   const authSession = getAuthSession();
-  const fallbackRoute = getDefaultRouteForRoles(authSession?.user.roles ?? []);
+  const fallbackRoute = authSession
+    ? getDefaultRouteForRoles(authSession.user.roles)
+    : "/home";
   const isHomeRoute =
     location.pathname === "/" || location.pathname === "/home";
+  const isCitizenRoute = location.pathname.startsWith("/citizen");
   const isRescueTeamRoute = location.pathname === "/rescue-team";
   const isCoordinatorRoute = location.pathname.startsWith(
     "/rescue-coordinator",
   );
   const isManagerRoute = location.pathname.startsWith("/manager");
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const hasPrivilegedRole = hasAnyRole(authSession, [
+    "ADMIN",
+    "MANAGER",
+    "COORDINATOR",
+    "TEAM_LEADER",
+    "TEAM_MEMBER",
+  ]);
+
+  if (isHomeRoute && authSession) {
+    const targetRoute =
+      fallbackRoute === "/citizen" && location.search
+        ? `/citizen${location.search}`
+        : fallbackRoute;
+    return <Navigate to={targetRoute} replace />;
+  }
+
+  if (isCitizenRoute && !authSession) {
+    return <Navigate to="/home" replace />;
+  }
+
+  if (isCitizenRoute && hasPrivilegedRole) {
+    return <Navigate to={fallbackRoute} replace />;
+  }
 
   if (isAdminRoute && !hasAnyRole(authSession, ["ADMIN"])) {
     return <Navigate to={fallbackRoute} replace />;
@@ -127,6 +154,20 @@ export default function App() {
     );
   }
 
+  if (isCitizenRoute) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="ml-64 p-4 md:p-8">
+          <Routes>
+            <Route path="/citizen" element={<CitizenPage />} />
+            <Route path="*" element={<Navigate to="/citizen" replace />} />
+          </Routes>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={
@@ -154,10 +195,16 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/home" element={<HomeView />} />
+            <Route path="/citizen" element={<CitizenPage />} />
             <Route path="/track" element={<RescueTrack />} />
             <Route path="/rescue-team" element={<RescueTeamMission />} />
             <Route path="/confirmed" element={<SupportConfirmed />} />
-            <Route path="*" element={<Navigate to="/home" replace />} />
+            <Route
+              path="*"
+              element={
+                <Navigate to={authSession ? fallbackRoute : "/home"} replace />
+              }
+            />
           </Routes>
         </main>
       </div>
