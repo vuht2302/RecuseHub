@@ -304,6 +304,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
                 id = x.id,
                 itemCode = x.code,
                 itemName = x.name,
+                itemCategoryCode = x.item_category.code,
                 itemCategory = new { id = x.item_category.id, code = x.item_category.code, name = x.item_category.name },
                 unitCode = x.unit_code,
                 requiresLotTracking = x.requires_lot_tracking,
@@ -347,6 +348,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             id = item.id,
             itemCode = item.code,
             itemName = item.name,
+            itemCategoryCode = item.item_category.code,
             itemCategory = new { id = item.item_category.id, code = item.item_category.code, name = item.item_category.name },
             unitCode = item.unit_code,
             requiresLotTracking = item.requires_lot_tracking,
@@ -407,7 +409,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         dbContext.items.Add(entity);
         await dbContext.SaveChangesAsync();
 
-        return new { id = entity.id, itemCode = entity.code };
+        return new { id = entity.id, itemCode = entity.code, itemCategoryCode = category.code };
     }
 
     public async Task<object> UpdateItem(Guid itemId, UpdateItemRequest request)
@@ -448,7 +450,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         entity.is_active = request.IsActive;
 
         await dbContext.SaveChangesAsync();
-        return new { id = entity.id, updated = true };
+        return new { id = entity.id, updated = true, itemCode = entity.code, itemCategoryCode = category.code };
     }
 
     public async Task<object> DeleteItem(Guid itemId)

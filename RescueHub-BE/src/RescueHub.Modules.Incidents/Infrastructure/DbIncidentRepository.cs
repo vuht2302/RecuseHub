@@ -1611,6 +1611,8 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             note = request.Note
         });
 
+        await SyncIncidentStatusFromMission(mission, now, request.Note);
+
         await dbContext.SaveChangesAsync();
 
         return new
@@ -1675,6 +1677,8 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             note = request.Note
         });
 
+        await SyncIncidentStatusFromMission(mission, now, request.Note);
+
         await dbContext.SaveChangesAsync();
 
         return new
@@ -1703,6 +1707,56 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             "UNREACHABLE" => "ABORTED",
             _ => actionCode
         };
+
+    private async Task SyncIncidentStatusFromMission(mission mission, DateTime now, string? note)
+    {
+        var incident = await dbContext.incidents.FirstOrDefaultAsync(x => x.id == mission.incident_id);
+        if (incident is null)
+        {
+            return;
+        }
+
+        string? targetIncidentStatus = mission.status_code switch
+        {
+            "EN_ROUTE" or "ON_SITE" or "RESCUING" or "NEED_SUPPORT" => "IN_PROGRESS",
+            "COMPLETED" => incident.need_relief ? "RELIEF_REQUIRED" : "RESCUED",
+            _ => null
+        };
+
+        if (targetIncidentStatus is null)
+        {
+            return;
+        }
+
+        // Do not move backward once incident already reaches terminal/relief-required states.
+        if (targetIncidentStatus == "IN_PROGRESS" &&
+            (incident.status_code == "RESCUED" || incident.status_code == "RELIEF_REQUIRED" || incident.status_code == "CLOSED"))
+        {
+            return;
+        }
+
+        if (string.Equals(incident.status_code, targetIncidentStatus, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var fromStatus = incident.status_code;
+        incident.status_code = targetIncidentStatus;
+        incident.updated_at = now;
+
+        dbContext.incident_status_histories.Add(new incident_status_history
+        {
+            id = Guid.NewGuid(),
+            incident_id = incident.id,
+            from_status_code = fromStatus,
+            to_status_code = targetIncidentStatus,
+            action_code = "MISSION_STATUS_SYNC",
+            note = string.IsNullOrWhiteSpace(note)
+                ? $"Dong bo theo mission {mission.code} -> {mission.status_code}"
+                : note,
+            changed_at = now
+        });
+    }
 
     public async Task<object> TeamCreateFieldReport(Guid missionId, TeamFieldReportRequest request)
     {
