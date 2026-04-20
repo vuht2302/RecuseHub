@@ -3,12 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   House,
   LifeBuoy,
-  Send,
   LayoutDashboard,
   Package,
   Truck,
   Car,
-  BarChart3,
   Settings,
   LogOut,
   ChevronRight,
@@ -17,12 +15,11 @@ import {
   Users,
   Rocket,
   Map,
-  History,
   FolderKanban,
   UserRound,
-  BookText,
   LayoutGrid,
   SquareMenu,
+  ListOrdered,
 } from "lucide-react";
 import { useManager } from "../context/ManagerContext";
 import { useCoordinator } from "../context/CoordinatorContext";
@@ -83,6 +80,8 @@ const managerMenuItems: ManagerMenuItem[] = [
 type CoordinatorMenuItemType =
   | "overview"
   | "map"
+  | "hotspot"
+  | "relief-requests"
   | "current"
   | "teams"
   | "reports"
@@ -106,6 +105,16 @@ const coordinatorMenuItems: CoordinatorMenuItem[] = [
     icon: MapPin,
   },
   {
+    id: "hotspot",
+    label: "Vùng cứu trợ",
+    icon: AlertCircle,
+  },
+  {
+    id: "relief-requests",
+    label: "Danh sách cứu trợ",
+    icon: ListOrdered,
+  },
+  {
     id: "current",
     label: "Nhiệm vụ",
     icon: AlertCircle,
@@ -114,16 +123,6 @@ const coordinatorMenuItems: CoordinatorMenuItem[] = [
     id: "teams",
     label: "Trạng thái đội ngũ",
     icon: Users,
-  },
-  {
-    id: "reports",
-    label: "Báo cáo",
-    icon: BarChart3,
-  },
-  {
-    id: "dispatch",
-    label: "Triển khai đơn vị",
-    icon: Rocket,
   },
 ];
 
