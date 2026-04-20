@@ -532,10 +532,23 @@ public sealed class PublicService(
 
     public async Task<object> CreateReliefRequest(CreateReliefRequest request)
     {
+        if (request.Location is not null)
+        {
+            ValidateReliefLocation(request.Location);
+        }
+
         var now = DateTime.UtcNow;
         var prefix = $"CT-{now:yyyyMMdd}";
         var todayCount = await dbContext.relief_requests.CountAsync(x => x.code.StartsWith(prefix));
         var requestCode = $"{prefix}-{(todayCount + 1):000}";
+
+        var addressText = string.IsNullOrWhiteSpace(request.Location?.AddressText)
+            ? "UNKNOWN"
+            : request.Location!.AddressText!.Trim();
+
+        var geom = request.Location is null
+            ? null
+            : new Point((double)request.Location.Lng, (double)request.Location.Lat) { SRID = 4326 };
 
         var reliefRequest = new relief_request
         {
@@ -546,7 +559,8 @@ public sealed class PublicService(
             requester_phone = request.RequesterPhone,
             status_code = "NEW",
             household_count = request.HouseholdCount ?? 1,
-            address_text = "UNKNOWN",
+            address_text = addressText,
+            geom = geom,
             note = request.Note,
             created_at = now,
             updated_at = now
@@ -623,6 +637,15 @@ public sealed class PublicService(
             requestCode = reliefRequest.code,
             status = new { code = "NEW", name = "Da tiep nhan", color = "#EF4444" },
             requestedAt = reliefRequest.created_at,
+            location = request.Location is null
+                ? null
+                : new
+                {
+                    lat = request.Location.Lat,
+                    lng = request.Location.Lng,
+                    addressText = reliefRequest.address_text,
+                    landmark = request.Location.Landmark
+                },
             itemSummary = new
             {
                 receivedCount = incomingItems.Length,
@@ -895,6 +918,14 @@ public sealed class PublicService(
         if (location.Lat < -90 || location.Lat > 90 || location.Lng < -180 || location.Lng > 180)
         {
             throw new InvalidOperationException("Toa do khong hop le.");
+        }
+    }
+
+    private static void ValidateReliefLocation(SosLocationRequest location)
+    {
+        if (location.Lat < -90 || location.Lat > 90 || location.Lng < -180 || location.Lng > 180)
+        {
+            throw new InvalidOperationException("Toa do vi tri cuu tro khong hop le.");
         }
     }
 

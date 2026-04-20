@@ -46,6 +46,7 @@ public sealed record CreateReliefRequest(
     string RequesterPhone,
     int? HouseholdCount,
     string? Note,
+    SosLocationRequest? Location,
     IReadOnlyCollection<ReliefItemRequest>? Items);
 
 public sealed record ReliefItemRequest(
