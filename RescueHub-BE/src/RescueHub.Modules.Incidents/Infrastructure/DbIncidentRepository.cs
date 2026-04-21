@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using RescueHub.BuildingBlocks.Application;
 using RescueHub.Modules.Incidents.Application;
 using RescueHub.Persistence;
@@ -625,6 +626,12 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
         var todayCount = await dbContext.relief_requests.CountAsync(x => x.code.StartsWith(codePrefix));
         var requestCode = $"{codePrefix}-{(todayCount + 1):000}";
 
+        var reliefAdminAreaId = incident.incident_location?.admin_area_id;
+        if (!reliefAdminAreaId.HasValue && incident.incident_location is not null)
+        {
+            reliefAdminAreaId = await ResolveAdminAreaIdFromPoint(incident.incident_location.lat, incident.incident_location.lng);
+        }
+
         var reliefRequest = new relief_request
         {
             id = Guid.NewGuid(),
@@ -635,7 +642,7 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             linked_incident_id = incident.id,
             campaign_id = null,
             status_code = "NEW",
-            admin_area_id = incident.incident_location?.admin_area_id,
+            admin_area_id = reliefAdminAreaId,
             address_text = incident.incident_location?.address_text ?? "UNKNOWN",
             geom = incident.incident_location?.geom,
             household_count = householdCount,
@@ -763,7 +770,86 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             })
             .ToListAsync();
 
-        var items = requests
+        var unresolvedRequests = requests
+            .Where(x => x.adminAreaId == null && x.lat.HasValue && x.lng.HasValue)
+            .ToList();
+
+        var resolvedAreaByRequestId = new Dictionary<Guid, ResolvedAreaInfo>();
+        if (unresolvedRequests.Count > 0)
+        {
+            var areas = await dbContext.admin_areas
+                .AsNoTracking()
+                .Where(x => x.geom != null)
+                .Select(x => new { x.id, x.code, x.name, x.level_code, x.geom })
+                .ToListAsync();
+
+            foreach (var requestItem in unresolvedRequests)
+            {
+                var point = new Point(requestItem.lng!.Value, requestItem.lat!.Value) { SRID = 4326 };
+                var matched = areas
+                    .Where(x => x.geom != null && x.geom.Covers(point))
+                    .OrderBy(x => AdminAreaPriority(x.level_code))
+                    .FirstOrDefault();
+
+                if (matched is not null)
+                {
+                    resolvedAreaByRequestId[requestItem.id] = new ResolvedAreaInfo(matched.id, matched.code, matched.name);
+                }
+            }
+        }
+
+        var enrichedRequests = requests.Select(x =>
+        {
+            if (x.adminAreaId.HasValue)
+            {
+                return new
+                {
+                    x.id,
+                    x.code,
+                    x.status_code,
+                    x.created_at,
+                    x.address_text,
+                    x.lat,
+                    x.lng,
+                    adminAreaId = x.adminAreaId,
+                    adminAreaCode = x.adminAreaCode,
+                    adminAreaName = x.adminAreaName
+                };
+            }
+
+            if (resolvedAreaByRequestId.TryGetValue(x.id, out var resolvedArea))
+            {
+                return new
+                {
+                    x.id,
+                    x.code,
+                    x.status_code,
+                    x.created_at,
+                    x.address_text,
+                    x.lat,
+                    x.lng,
+                    adminAreaId = (Guid?)resolvedArea.Id,
+                    adminAreaCode = resolvedArea.Code,
+                    adminAreaName = resolvedArea.Name
+                };
+            }
+
+            return new
+            {
+                x.id,
+                x.code,
+                x.status_code,
+                x.created_at,
+                x.address_text,
+                x.lat,
+                x.lng,
+                adminAreaId = x.adminAreaId,
+                adminAreaCode = x.adminAreaCode,
+                adminAreaName = x.adminAreaName
+            };
+        }).ToList();
+
+        var items = enrichedRequests
             .GroupBy(x => new
             {
                 x.adminAreaId,
@@ -827,11 +913,38 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
                 top = normalizedTop,
                 fromTime
             },
-            totalRequests = requests.Count,
+            totalRequests = enrichedRequests.Count,
             hotspotCount = items.Count,
             items
         };
     }
+
+    private async Task<Guid?> ResolveAdminAreaIdFromPoint(decimal lat, decimal lng)
+    {
+        var point = new Point((double)lng, (double)lat) { SRID = 4326 };
+
+        var areas = await dbContext.admin_areas
+            .AsNoTracking()
+            .Where(x => x.geom != null)
+            .Select(x => new { x.id, x.level_code, x.geom })
+            .ToListAsync();
+
+        var matched = areas
+            .Where(x => x.geom != null && x.geom.Covers(point))
+            .OrderBy(x => AdminAreaPriority(x.level_code))
+            .FirstOrDefault();
+
+        return matched?.id;
+    }
+
+    private static int AdminAreaPriority(string? levelCode)
+        => levelCode switch
+        {
+            "WARD" => 0,
+            "DISTRICT" => 1,
+            "PROVINCE" => 2,
+            _ => 9
+        };
 
     public async Task<object> ListReliefRequestsForCoordinator(string? statusCode, string? keyword, int page, int pageSize)
     {
@@ -1611,6 +1724,8 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             note = request.Note
         });
 
+        await SyncIncidentStatusFromMission(mission, now, request.Note);
+
         await dbContext.SaveChangesAsync();
 
         return new
@@ -1675,6 +1790,8 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             note = request.Note
         });
 
+        await SyncIncidentStatusFromMission(mission, now, request.Note);
+
         await dbContext.SaveChangesAsync();
 
         return new
@@ -1703,6 +1820,56 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             "UNREACHABLE" => "ABORTED",
             _ => actionCode
         };
+
+    private async Task SyncIncidentStatusFromMission(mission mission, DateTime now, string? note)
+    {
+        var incident = await dbContext.incidents.FirstOrDefaultAsync(x => x.id == mission.incident_id);
+        if (incident is null)
+        {
+            return;
+        }
+
+        string? targetIncidentStatus = mission.status_code switch
+        {
+            "EN_ROUTE" or "ON_SITE" or "RESCUING" or "NEED_SUPPORT" => "IN_PROGRESS",
+            "COMPLETED" => incident.need_relief ? "RELIEF_REQUIRED" : "RESCUED",
+            _ => null
+        };
+
+        if (targetIncidentStatus is null)
+        {
+            return;
+        }
+
+        // Do not move backward once incident already reaches terminal/relief-required states.
+        if (targetIncidentStatus == "IN_PROGRESS" &&
+            (incident.status_code == "RESCUED" || incident.status_code == "RELIEF_REQUIRED" || incident.status_code == "CLOSED"))
+        {
+            return;
+        }
+
+        if (string.Equals(incident.status_code, targetIncidentStatus, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var fromStatus = incident.status_code;
+        incident.status_code = targetIncidentStatus;
+        incident.updated_at = now;
+
+        dbContext.incident_status_histories.Add(new incident_status_history
+        {
+            id = Guid.NewGuid(),
+            incident_id = incident.id,
+            from_status_code = fromStatus,
+            to_status_code = targetIncidentStatus,
+            action_code = "MISSION_STATUS_SYNC",
+            note = string.IsNullOrWhiteSpace(note)
+                ? $"Dong bo theo mission {mission.code} -> {mission.status_code}"
+                : note,
+            changed_at = now
+        });
+    }
 
     public async Task<object> TeamCreateFieldReport(Guid missionId, TeamFieldReportRequest request)
     {
@@ -1880,4 +2047,6 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
         string MissionCode,
         string MissionStatusCode,
         DateTime AssignedAt);
+
+    private sealed record ResolvedAreaInfo(Guid Id, string? Code, string? Name);
 }

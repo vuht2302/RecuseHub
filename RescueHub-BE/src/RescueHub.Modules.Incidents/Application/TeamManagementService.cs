@@ -66,6 +66,9 @@ public sealed class TeamManagementService(ITeamManagementRepository repository) 
     public Task<object> ListVehicles(string? keyword, string? statusCode, Guid? teamId)
         => repository.ListVehicles(keyword, statusCode, teamId);
 
+    public Task<object> GetVehicleOptions()
+        => repository.GetVehicleOptions();
+
     public Task<object> GetVehicle(Guid vehicleId)
         => repository.GetVehicle(vehicleId);
 

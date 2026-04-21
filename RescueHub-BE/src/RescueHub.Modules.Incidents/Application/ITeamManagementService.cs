@@ -44,6 +44,8 @@ public interface ITeamManagementService
 
     Task<object> ListVehicles(string? keyword, string? statusCode, Guid? teamId);
 
+    Task<object> GetVehicleOptions();
+
     Task<object> GetVehicle(Guid vehicleId);
 
     Task<object> CreateVehicle(CreateVehicleRequest request);

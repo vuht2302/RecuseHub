@@ -316,6 +316,13 @@ public sealed class ManagerTeamsController(ITeamManagementService service) : Bas
         => OkResponse<object>(await service.ListVehicles(keyword, statusCode, teamId), "Lay danh sach vehicle thanh cong");
 
     /// <summary>
+    /// Lay options phuc vu tao/cap nhat vehicle (vehicleTypeId, capabilityIds, teamId, statusCode).
+    /// </summary>
+    [HttpGet("vehicles/options")]
+    public async Task<ActionResult<ApiResponse<object>>> GetVehicleOptions()
+        => OkResponse<object>(await service.GetVehicleOptions(), "Lay vehicle options thanh cong");
+
+    /// <summary>
     /// Lay chi tiet phuong tien.
     /// </summary>
     [HttpGet("vehicles/{vehicleId:guid}")]

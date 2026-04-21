@@ -887,6 +887,53 @@ public sealed class DbTeamManagementRepository(RescueHubDbContext dbContext) : I
         return new { items };
     }
 
+    public async Task<object> GetVehicleOptions()
+    {
+        var vehicleTypes = await dbContext.vehicle_types
+            .AsNoTracking()
+            .OrderBy(x => x.code)
+            .Select(x => new
+            {
+                id = x.id,
+                code = x.code,
+                name = x.name,
+                description = x.description
+            })
+            .ToListAsync();
+
+        var capabilities = await dbContext.vehicle_capabilities
+            .AsNoTracking()
+            .OrderBy(x => x.code)
+            .Select(x => new
+            {
+                id = x.id,
+                code = x.code,
+                name = x.name,
+                description = x.description
+            })
+            .ToListAsync();
+
+        var teams = await dbContext.teams
+            .AsNoTracking()
+            .OrderBy(x => x.code)
+            .Select(x => new
+            {
+                id = x.id,
+                code = x.code,
+                name = x.name,
+                statusCode = x.status_code
+            })
+            .ToListAsync();
+
+        return new
+        {
+            vehicleTypes,
+            capabilities,
+            teams,
+            vehicleStatusCodes = VehicleStatusCodes.Select(ToCodeItem).ToArray()
+        };
+    }
+
     public async Task<object> GetVehicle(Guid vehicleId)
     {
         var vehicle = await dbContext.vehicles
