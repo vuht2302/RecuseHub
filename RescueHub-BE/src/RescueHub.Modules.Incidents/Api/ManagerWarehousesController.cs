@@ -439,7 +439,7 @@ public sealed class ManagerWarehousesController(IWarehouseManagementService serv
     /// Xac nhan da nhan phan phoi.
     /// </summary>
     /// <param name="distributionId">Dinh danh phieu phan phoi.</param>
-    /// <param name="request">Thong tin ACK.</param>
+    /// <param name="request">Noi dung xac nhan (note).</param>
     /// <returns>Ket qua xac nhan nhan hang.</returns>
     [HttpPost("distributions/{distributionId:guid}/ack")]
     public async Task<ActionResult<ApiResponse<object>>> AckDistribution([FromRoute] Guid distributionId, [FromBody] DistributionAckRequest request)

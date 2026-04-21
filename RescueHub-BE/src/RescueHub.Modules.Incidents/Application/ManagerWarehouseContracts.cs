@@ -60,7 +60,6 @@ public sealed record UpdateLotRequest(
 
 public sealed record CreateStockTransactionLineRequest(
     Guid ItemId,
-    Guid LotId,
     decimal Qty,
     string UnitCode);
 
@@ -130,8 +129,4 @@ public sealed record CreateDistributionRequest(
     string? Note);
 
 public sealed record DistributionAckRequest(
-    string AckMethodCode,
-    string? AckCode,
-    string? AckByName,
-    string? AckPhone,
-    string? AckNote);
+    string? Note);

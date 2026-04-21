@@ -8,6 +8,8 @@ namespace RescueHub.Modules.Incidents.Infrastructure;
 
 public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext) : IWarehouseManagementRepository
 {
+    private sealed record StockMovementLine(Guid ItemId, Guid? LotId, decimal Qty, string UnitCode);
+
     private static readonly HashSet<string> WarehouseStatusCodes = ["ACTIVE", "INACTIVE"];
     private static readonly HashSet<string> ItemUnitCodes = ["THUNG", "GOI", "CHAI", "SUAT", "KIT", "CAI"];
     private static readonly HashSet<string> IssuePolicyCodes = ["FIFO", "FEFO"];
@@ -805,7 +807,11 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
 
         dbContext.stock_transactions.Add(transaction);
 
-        var createdLines = await ApplyStockMovement(transaction.id, request.WarehouseId, transactionType, request.Lines);
+        var movementLines = request.Lines
+            .Select(x => new StockMovementLine(x.ItemId, null, x.Qty, x.UnitCode))
+            .ToArray();
+
+        var createdLines = await ApplyStockMovement(transaction.id, request.WarehouseId, transactionType, movementLines);
         dbContext.stock_transaction_lines.AddRange(createdLines);
 
         await dbContext.SaveChangesAsync();
@@ -934,7 +940,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         dbContext.relief_issues.Add(issue);
 
         var transactionLines = request.Lines
-            .Select(x => new CreateStockTransactionLineRequest(x.ItemId, x.LotId, x.IssueQty, x.UnitCode))
+            .Select(x => new StockMovementLine(x.ItemId, x.LotId, x.IssueQty, x.UnitCode))
             .ToArray();
 
         var stockTransaction = new stock_transaction
@@ -1440,7 +1446,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         dbContext.stock_transactions.Add(stockTransaction);
 
         var movementLines = request.Lines
-            .Select(x => new CreateStockTransactionLineRequest(x.ItemId, x.LotId, x.Qty, x.UnitCode))
+            .Select(x => new StockMovementLine(x.ItemId, x.LotId, x.Qty, x.UnitCode))
             .ToArray();
         var createdTransactionLines = await ApplyStockMovement(stockTransaction.id, warehouseId, "ISSUE", movementLines);
         dbContext.stock_transaction_lines.AddRange(createdTransactionLines);
@@ -1491,26 +1497,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             throw new InvalidOperationException("Phieu phan phoi da duoc xac nhan truoc do.");
         }
 
-        var ackMethod = NormalizeCode(request.AckMethodCode);
-        EnsureAllowed(ackMethod, AckMethodCodes, nameof(request.AckMethodCode));
-
-        if (!string.Equals(ack.ack_method_code, ackMethod, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("AckMethodCode khong khop voi phieu phan phoi.");
-        }
-
-        if (ackMethod == "OTP")
-        {
-            var inputCode = NormalizeRequired(request.AckCode, nameof(request.AckCode));
-            if (!string.Equals(ack.ack_code, inputCode, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("Ma ACK khong dung.");
-            }
-        }
-
-        ack.ack_by_name = NormalizeOptional(request.AckByName);
-        ack.ack_phone = NormalizeOptional(request.AckPhone);
-        ack.ack_note = NormalizeOptional(request.AckNote);
+        ack.ack_note = NormalizeOptional(request.Note);
         ack.ack_at = DateTime.UtcNow;
 
         distribution.status_code = "COMPLETED";
@@ -1524,7 +1511,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         Guid stockTransactionId,
         Guid warehouseId,
         string transactionType,
-        IReadOnlyCollection<CreateStockTransactionLineRequest> lines)
+        IReadOnlyCollection<StockMovementLine> lines)
     {
         var result = new List<stock_transaction_line>();
 
@@ -1542,14 +1529,6 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             var item = await dbContext.items.FirstOrDefaultAsync(x => x.id == line.ItemId)
                 ?? throw new InvalidOperationException($"Khong tim thay item: {line.ItemId}");
 
-            var lot = await dbContext.item_lots.FirstOrDefaultAsync(x => x.id == line.LotId)
-                ?? throw new InvalidOperationException($"Khong tim thay lot: {line.LotId}");
-
-            if (lot.item_id != item.id)
-            {
-                throw new InvalidOperationException("Lot khong thuoc item duoc khai bao.");
-            }
-
             if (!string.Equals(item.unit_code, unitCode, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException($"UnitCode khong hop le voi item {item.code}. Unit hop le: {item.unit_code}");
@@ -1557,6 +1536,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
 
             if (transactionType == "RECEIPT")
             {
+                var lot = await ResolveLotForReceipt(item, line.LotId);
                 var toBin = await EnsureDefaultBinForWarehouse(warehouseId);
                 var receiptBalance = await GetOrCreateStockBalance(warehouseId, toBin.id, item.id, lot.id);
                 receiptBalance.qty_on_hand += qty;
@@ -1576,43 +1556,151 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
                 continue;
             }
 
-            ValidateIssueLot(lot);
+            var remainingQty = qty;
+            var candidateBalances = await ResolveIssueBalances(warehouseId, item.id, item.issue_policy_code, line.LotId);
 
-            var balance = await dbContext.stock_balances
-                .Where(x =>
-                    x.warehouse_id == warehouseId &&
-                    x.item_id == item.id &&
-                    x.item_lot_id == lot.id &&
-                    x.qty_on_hand > 0)
-                .OrderByDescending(x => x.qty_on_hand)
-                .FirstOrDefaultAsync()
-                ?? throw new InvalidOperationException("Khong tim thay ton kho cho line ISSUE.");
+            foreach (var balance in candidateBalances)
+            {
+                if (remainingQty <= 0)
+                {
+                    break;
+                }
 
-            if (balance.qty_on_hand < qty)
+                var lot = balance.item_lot;
+                ValidateIssueLot(lot);
+
+                if (balance.qty_on_hand <= 0)
+                {
+                    continue;
+                }
+
+                var deductQty = Math.Min(remainingQty, balance.qty_on_hand);
+                balance.qty_on_hand -= deductQty;
+                remainingQty -= deductQty;
+
+                result.Add(new stock_transaction_line
+                {
+                    id = Guid.NewGuid(),
+                    stock_transaction_id = stockTransactionId,
+                    item_id = item.id,
+                    item_lot_id = lot.id,
+                    from_bin_id = balance.warehouse_bin_id,
+                    to_bin_id = null,
+                    qty = deductQty,
+                    unit_code = unitCode
+                });
+            }
+
+            if (remainingQty > 0)
             {
                 throw new InvalidOperationException("So luong ton kho khong du de ISSUE.");
             }
-
-            balance.qty_on_hand -= qty;
-
-            result.Add(new stock_transaction_line
-            {
-                id = Guid.NewGuid(),
-                stock_transaction_id = stockTransactionId,
-                item_id = item.id,
-                item_lot_id = lot.id,
-                from_bin_id = balance.warehouse_bin_id,
-                to_bin_id = null,
-                qty = qty,
-                unit_code = unitCode
-            });
         }
 
         return result;
     }
 
+    private async Task<item_lot> ResolveLotForReceipt(item item, Guid? requestedLotId)
+    {
+        if (requestedLotId.HasValue)
+        {
+            var lot = await dbContext.item_lots.FirstOrDefaultAsync(x => x.id == requestedLotId.Value)
+                ?? throw new InvalidOperationException($"Khong tim thay lot: {requestedLotId.Value}");
+
+            if (lot.item_id != item.id)
+            {
+                throw new InvalidOperationException("Lot khong thuoc item duoc khai bao.");
+            }
+
+            return lot;
+        }
+
+        var trackedLot = dbContext.item_lots.Local
+            .Where(x => x.item_id == item.id && x.status_code != "EXPIRED" && x.status_code != "QUARANTINED")
+            .OrderByDescending(x => x.received_at)
+            .FirstOrDefault();
+        if (trackedLot is not null)
+        {
+            return trackedLot;
+        }
+
+        var existingLot = await dbContext.item_lots
+            .Where(x => x.item_id == item.id && x.status_code != "EXPIRED" && x.status_code != "QUARANTINED")
+            .OrderByDescending(x => x.received_at)
+            .FirstOrDefaultAsync();
+
+        if (existingLot is not null)
+        {
+            return existingLot;
+        }
+
+        var suffix = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
+        var autoLotNo = $"AUTO-{item.code}-{suffix}";
+
+        var lotEntity = new item_lot
+        {
+            id = Guid.NewGuid(),
+            item_id = item.id,
+            lot_no = autoLotNo,
+            mfg_date = null,
+            exp_date = item.exp_date,
+            donor_name = "SYSTEM",
+            received_at = DateTime.UtcNow,
+            status_code = "AVAILABLE"
+        };
+
+        dbContext.item_lots.Add(lotEntity);
+        return lotEntity;
+    }
+
+    private async Task<List<stock_balance>> ResolveIssueBalances(Guid warehouseId, Guid itemId, string issuePolicyCode, Guid? requestedLotId)
+    {
+        var baseQuery = dbContext.stock_balances
+            .Include(x => x.item_lot)
+            .Where(x =>
+                x.warehouse_id == warehouseId &&
+                x.item_id == itemId &&
+                x.qty_on_hand > 0);
+
+        if (requestedLotId.HasValue)
+        {
+            return await baseQuery
+                .Where(x => x.item_lot_id == requestedLotId.Value)
+                .OrderByDescending(x => x.qty_on_hand)
+                .ToListAsync();
+        }
+
+        var normalizedPolicy = NormalizeCode(issuePolicyCode);
+        if (normalizedPolicy == "FEFO")
+        {
+            return await baseQuery
+                .OrderBy(x => x.item_lot.exp_date == null ? 1 : 0)
+                .ThenBy(x => x.item_lot.exp_date)
+                .ThenBy(x => x.item_lot.received_at)
+                .ThenByDescending(x => x.qty_on_hand)
+                .ToListAsync();
+        }
+
+        return await baseQuery
+            .OrderBy(x => x.item_lot.received_at)
+            .ThenBy(x => x.item_lot.exp_date == null ? 1 : 0)
+            .ThenBy(x => x.item_lot.exp_date)
+            .ThenByDescending(x => x.qty_on_hand)
+            .ToListAsync();
+    }
+
     private async Task<stock_balance> GetOrCreateStockBalance(Guid warehouseId, Guid binId, Guid itemId, Guid lotId)
     {
+        var trackedBalance = dbContext.stock_balances.Local.FirstOrDefault(x =>
+            x.warehouse_id == warehouseId &&
+            x.warehouse_bin_id == binId &&
+            x.item_id == itemId &&
+            x.item_lot_id == lotId);
+        if (trackedBalance is not null)
+        {
+            return trackedBalance;
+        }
+
         var balance = await dbContext.stock_balances.FirstOrDefaultAsync(x =>
             x.warehouse_id == warehouseId &&
             x.warehouse_bin_id == binId &&
