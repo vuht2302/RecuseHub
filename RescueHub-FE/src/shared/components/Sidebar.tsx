@@ -22,7 +22,10 @@ import {
   TrendingUp,
   PackageCheck,
 } from "lucide-react";
-import { useManager, type ManagerMenuItemType } from "../context/ManagerContext";
+import {
+  useManager,
+  type ManagerMenuItemType,
+} from "../context/ManagerContext";
 import { useCoordinator } from "../context/CoordinatorContext";
 import { useRescueTeam } from "../context/RescueTeamContext";
 import {
@@ -63,12 +66,7 @@ const managerMenuItems: ManagerMenuItem[] = [
     icon: SquareMenu,
     color: "text-black-600",
   },
-  {
-    id: "import-export",
-    label: "Xuất nhập kho",
-    icon: Truck,
-    color: "text-black-600",
-  },
+
   {
     id: "relief-distribution",
     label: "Phân phối cứu trợ",

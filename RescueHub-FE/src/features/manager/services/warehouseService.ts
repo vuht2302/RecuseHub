@@ -177,13 +177,41 @@ export interface Item {
   id: string;
   itemCode: string;
   itemName: string;
+  itemCategoryCode?: string;
   itemCategory: CodeName;
-  unit: CodeName;
+  unit?: CodeName;
+  unitCode?: string;
   requiresLotTracking: boolean;
   requiresExpiryTracking: boolean;
   issuePolicyCode: string;
   isActive: boolean;
+  lotCount?: number;
+  lots?: ItemLot[];
   createdAt: string;
+}
+
+export interface ItemLot {
+  id: string;
+  lotNo: string;
+  mfgDate?: string | null;
+  expDate: string | null;
+  donorName?: string | null;
+  statusCode: string;
+  receivedAt: string;
+}
+
+export interface ItemDetail {
+  id: string;
+  itemCode: string;
+  itemName: string;
+  itemCategoryCode: string;
+  itemCategory: CodeName;
+  unitCode: string;
+  requiresLotTracking: boolean;
+  requiresExpiryTracking: boolean;
+  issuePolicyCode: string;
+  isActive: boolean;
+  lots: ItemLot[];
 }
 
 export interface ItemPayload {
@@ -237,10 +265,14 @@ export async function getItems(token: string): Promise<Item[]> {
   return Array.isArray(data) ? data : (data as PagedResponse<Item>).items;
 }
 
-export async function createItem(
-  payload: ItemPayload,
-  token: string,
-): Promise<Item> {
+
+export async function getItemDetail(id: string, token: string): Promise<ItemDetail> {
+  return apiFetch<ItemDetail>(`${BASE}/items/${id}`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function createItem(payload: ItemPayload, token: string): Promise<Item> {
   return apiFetch<Item>(`${BASE}/items`, {
     method: "POST",
     headers: authHeaders(token),
