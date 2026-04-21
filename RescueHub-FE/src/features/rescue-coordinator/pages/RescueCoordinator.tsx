@@ -93,22 +93,29 @@ const RescueCoordinatorPage: React.FC = () => {
   ): RescueRequest => {
     let normalizedStatus: RescueRequest["status"] = "pending";
     const statusCode = incident.status?.code ?? "PENDING";
-    
+
     let handlingTeamName = undefined;
-    const hasHandlingTeam = incident.handlingTeams && incident.handlingTeams.length > 0;
+    const hasHandlingTeam =
+      incident.handlingTeams && incident.handlingTeams.length > 0;
 
     if (hasHandlingTeam) {
-      const primaryTeam = incident.handlingTeams.find((t) => t.isPrimaryTeam) || incident.handlingTeams[0];
+      const primaryTeam =
+        incident.handlingTeams.find((t) => t.isPrimaryTeam) ||
+        incident.handlingTeams[0];
       handlingTeamName = primaryTeam.teamName;
       const mStatus = primaryTeam.missionStatusCode;
-      
-      if (mStatus === "ASSIGNED" || mStatus === "DISPATCHED") normalizedStatus = "dispatched";
-      else if (mStatus === "RESCUING" || mStatus === "IN_PROGRESS") normalizedStatus = "in-progress";
+
+      if (mStatus === "ASSIGNED" || mStatus === "DISPATCHED")
+        normalizedStatus = "dispatched";
+      else if (mStatus === "RESCUING" || mStatus === "IN_PROGRESS")
+        normalizedStatus = "in-progress";
       else if (mStatus === "COMPLETED") normalizedStatus = "completed";
       else normalizedStatus = "dispatched";
     } else {
-      if (statusCode === "NEW" || statusCode === "PENDING") normalizedStatus = "pending";
-      else if (statusCode === "VERIFIED" || statusCode === "ASSESSED") normalizedStatus = "verified";
+      if (statusCode === "NEW" || statusCode === "PENDING")
+        normalizedStatus = "pending";
+      else if (statusCode === "VERIFIED" || statusCode === "ASSESSED")
+        normalizedStatus = "verified";
       else if (statusCode === "ASSIGNED") normalizedStatus = "dispatched";
       else if (statusCode === "IN_PROGRESS") normalizedStatus = "in-progress";
       else if (statusCode === "COMPLETED") normalizedStatus = "completed";
@@ -450,11 +457,14 @@ const RescueCoordinatorPage: React.FC = () => {
           </div>
         </div>
 
-
         {/* Content Area */}
         <div
           className={`${
-            activeMenu === "map" || activeMenu === "hotspot" || activeMenu === "relief-requests" || activeMenu === "current" || activeMenu === "teams"
+            activeMenu === "map" ||
+            activeMenu === "hotspot" ||
+            activeMenu === "relief-requests" ||
+            activeMenu === "current" ||
+            activeMenu === "teams"
               ? "grid grid-cols-1 gap-6"
               : "grid grid-cols-3 gap-6"
           } ${activeMenu === "map" || activeMenu === "hotspot" || activeMenu === "relief-requests" || activeMenu === "current" ? "h-screen" : ""}`}
@@ -462,16 +472,24 @@ const RescueCoordinatorPage: React.FC = () => {
           {/* Main Content */}
           <div
             className={`${
-              activeMenu === "map" || activeMenu === "hotspot" || activeMenu === "teams" ? "col-span-1 h-full" : "col-span-2"
+              activeMenu === "map" ||
+              activeMenu === "hotspot" ||
+              activeMenu === "teams"
+                ? "col-span-1 h-full"
+                : "col-span-2"
             } space-y-6`}
-        >
-          {activeMenu === "map" && <MissionMapSection />}
+          >
+            {activeMenu === "map" && <MissionMapSection />}
 
-          {activeMenu === "hotspot" && <ReliefHotspotMap className="flex-1" />}
+            {activeMenu === "hotspot" && (
+              <ReliefHotspotMap className="flex-1" />
+            )}
 
-          {activeMenu === "relief-requests" && <ReliefRequestsPage className="flex-1" />}
+            {activeMenu === "relief-requests" && (
+              <ReliefRequestsPage className="flex-1" />
+            )}
 
-          {activeMenu === "overview" && (
+            {activeMenu === "overview" && (
               <>
                 {/* Stats */}
                 <div className="grid grid-cols-4 gap-4">
@@ -616,7 +634,10 @@ const RescueCoordinatorPage: React.FC = () => {
                                   </span>
                                 )}
                                 {request.handlingTeamName && (
-                                  <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-bold truncate max-w-[150px]" title={request.handlingTeamName}>
+                                  <span
+                                    className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-bold truncate max-w-[150px]"
+                                    title={request.handlingTeamName}
+                                  >
                                     {request.handlingTeamName}
                                   </span>
                                 )}
@@ -675,68 +696,72 @@ const RescueCoordinatorPage: React.FC = () => {
           </div>
 
           {/* Right Panel - Incident Detail */}
-          {activeMenu !== "current" && activeMenu !== "map" && activeMenu !== "hotspot" && activeMenu !== "relief-requests" && activeMenu !== "teams" && (
-            <div
-              className="bg-white rounded-xl shadow-sm border border-gray-100 sticky top-6 overflow-hidden"
-              style={{
-                maxHeight: "calc(100vh - 120px)",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              {/* Panel Header */}
-              <div className="px-5 py-3 border-b border-gray-100 flex-shrink-0">
-                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
-                  Chi tiết yêu cầu
-                </h3>
-              </div>
+          {activeMenu !== "current" &&
+            activeMenu !== "map" &&
+            activeMenu !== "hotspot" &&
+            activeMenu !== "relief-requests" &&
+            activeMenu !== "teams" && (
+              <div
+                className="bg-white rounded-xl shadow-sm border border-gray-100 sticky top-6 overflow-hidden"
+                style={{
+                  maxHeight: "calc(100vh - 120px)",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                {/* Panel Header */}
+                <div className="px-5 py-3 border-b border-gray-100 flex-shrink-0">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Chi tiết yêu cầu
+                  </h3>
+                </div>
 
-              {selectedRequest ? (
-                <div className="flex-1 overflow-hidden flex flex-col">
-                  {isLoadingDetail && (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="flex flex-col items-center gap-3">
-                        <div
-                          className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"
-                          style={{ borderWidth: 3 }}
-                        />
-                        <p className="text-sm text-gray-500">
-                          Đang tải chi tiết sự cố...
+                {selectedRequest ? (
+                  <div className="flex-1 overflow-hidden flex flex-col">
+                    {isLoadingDetail && (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="flex flex-col items-center gap-3">
+                          <div
+                            className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"
+                            style={{ borderWidth: 3 }}
+                          />
+                          <p className="text-sm text-gray-500">
+                            Đang tải chi tiết sự cố...
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {detailError && (
+                      <div className="mx-5 mt-4 border border-red-200 bg-red-50 rounded-xl p-4">
+                        <p className="text-sm text-red-700 font-medium">
+                          {detailError}
                         </p>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {detailError && (
-                    <div className="mx-5 mt-4 border border-red-200 bg-red-50 rounded-xl p-4">
-                      <p className="text-sm text-red-700 font-medium">
-                        {detailError}
-                      </p>
-                    </div>
-                  )}
-
-                  {!isLoadingDetail && selectedIncidentDetail && (
-                    <IncidentDetailPanel
-                      detail={selectedIncidentDetail}
-                      requestStatus={selectedRequest.status}
-                      onVerify={() => setShowVerificationModal(true)}
-                      onAssess={() => setShowAssessmentModal(true)}
-                      onDispatch={() => setShowDispatchModal(true)}
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                  <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                    <MapPin size={24} className="text-gray-400" />
+                    {!isLoadingDetail && selectedIncidentDetail && (
+                      <IncidentDetailPanel
+                        detail={selectedIncidentDetail}
+                        requestStatus={selectedRequest.status}
+                        onVerify={() => setShowVerificationModal(true)}
+                        onAssess={() => setShowAssessmentModal(true)}
+                        onDispatch={() => setShowDispatchModal(true)}
+                      />
+                    )}
                   </div>
-                  <p className="text-gray-500 text-sm">
-                    Chọn một yêu cầu để xem chi tiết
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                    <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                      <MapPin size={24} className="text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 text-sm">
+                      Chọn một yêu cầu để xem chi tiết
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
         </div>
       </main>
 
@@ -774,11 +799,18 @@ const RescueCoordinatorPage: React.FC = () => {
             setVerificationError(null);
           }}
           requestId={selectedRequest.id}
-          requesterName={selectedRequest.requesterName}
-          requesterPhone={selectedRequest.requesterPhone}
+          incidentCode={selectedRequest.incidentCode}
+          reporterName={selectedIncidentDetail?.reporter?.name || ""}
+          reporterPhone={selectedIncidentDetail?.reporter?.phone || ""}
           requestTitle={selectedRequest.title}
-          location={selectedRequest.location}
-          description={selectedRequest.description}
+          location={
+            selectedIncidentDetail?.location?.addressText ||
+            selectedRequest.location
+          }
+          description={selectedIncidentDetail?.description || ""}
+          images={(selectedIncidentDetail?.files || [])
+            .filter((f) => f.contentType === "IMAGE")
+            .map((f) => ({ fileId: f.fileId, url: f.url }))}
           onConfirm={handleVerifyConfirm}
           onReject={async () => {
             try {
