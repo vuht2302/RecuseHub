@@ -8,6 +8,7 @@ import MasterDataPage from "../components/MasterDataPage";
 import WorkflowPage from "../components/WorkflowPage";
 import CatalogManagement from "../components/CatalogManagement";
 import SystemSettingsPage from "../components/SystemSettingsPage";
+import SupportRequestPage from "../../rescueTeam/SupportRequestPage";
 
 
 export const AdminPage = () => {
@@ -31,6 +32,8 @@ export const AdminPage = () => {
         return <SystemSettingsPage />;
       case "reports":
         return <ReportDashboard />;
+        case "support-team":
+        return <SupportRequestPage/>;
         default: return <ReportDashboard />;
     }
   };
