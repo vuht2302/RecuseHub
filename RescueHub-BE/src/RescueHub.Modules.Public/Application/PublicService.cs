@@ -550,6 +550,10 @@ public sealed class PublicService(
             ? null
             : new Point((double)request.Location.Lng, (double)request.Location.Lat) { SRID = 4326 };
 
+        var adminAreaId = request.Location is null
+            ? null
+            : await ResolveAdminAreaIdFromPoint(request.Location.Lat, request.Location.Lng);
+
         var reliefRequest = new relief_request
         {
             id = Guid.NewGuid(),
@@ -558,6 +562,7 @@ public sealed class PublicService(
             requester_name = request.RequesterName,
             requester_phone = request.RequesterPhone,
             status_code = "NEW",
+            admin_area_id = adminAreaId,
             household_count = request.HouseholdCount ?? 1,
             address_text = addressText,
             geom = geom,
@@ -802,10 +807,13 @@ public sealed class PublicService(
 
         dbContext.incidents.Add(incident);
 
+        var incidentAdminAreaId = await ResolveAdminAreaIdFromPoint(location.Lat, location.Lng);
+
         dbContext.incident_locations.Add(new incident_location
         {
             id = Guid.NewGuid(),
             incident_id = incident.id,
+            admin_area_id = incidentAdminAreaId,
             address_text = string.IsNullOrWhiteSpace(location.AddressText) ? "UNKNOWN" : location.AddressText,
             landmark = location.Landmark,
             lat = location.Lat,
@@ -928,6 +936,33 @@ public sealed class PublicService(
             throw new InvalidOperationException("Toa do vi tri cuu tro khong hop le.");
         }
     }
+
+    private async Task<Guid?> ResolveAdminAreaIdFromPoint(decimal lat, decimal lng)
+    {
+        var point = new Point((double)lng, (double)lat) { SRID = 4326 };
+
+        var areas = await dbContext.admin_areas
+            .AsNoTracking()
+            .Where(x => x.geom != null)
+            .Select(x => new { x.id, x.level_code, x.geom })
+            .ToListAsync();
+
+        var matched = areas
+            .Where(x => x.geom != null && x.geom.Covers(point))
+            .OrderBy(x => AdminAreaPriority(x.level_code))
+            .FirstOrDefault();
+
+        return matched?.id;
+    }
+
+    private static int AdminAreaPriority(string? levelCode)
+        => levelCode switch
+        {
+            "WARD" => 0,
+            "DISTRICT" => 1,
+            "PROVINCE" => 2,
+            _ => 9
+        };
 
     private static void ValidateSceneDetailCodes(IReadOnlyCollection<PublicSceneDetailRequest>? sceneDetails)
     {

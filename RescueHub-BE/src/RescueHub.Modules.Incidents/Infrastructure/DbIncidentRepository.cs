@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using RescueHub.BuildingBlocks.Application;
 using RescueHub.Modules.Incidents.Application;
 using RescueHub.Persistence;
@@ -625,6 +626,12 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
         var todayCount = await dbContext.relief_requests.CountAsync(x => x.code.StartsWith(codePrefix));
         var requestCode = $"{codePrefix}-{(todayCount + 1):000}";
 
+        var reliefAdminAreaId = incident.incident_location?.admin_area_id;
+        if (!reliefAdminAreaId.HasValue && incident.incident_location is not null)
+        {
+            reliefAdminAreaId = await ResolveAdminAreaIdFromPoint(incident.incident_location.lat, incident.incident_location.lng);
+        }
+
         var reliefRequest = new relief_request
         {
             id = Guid.NewGuid(),
@@ -635,7 +642,7 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             linked_incident_id = incident.id,
             campaign_id = null,
             status_code = "NEW",
-            admin_area_id = incident.incident_location?.admin_area_id,
+            admin_area_id = reliefAdminAreaId,
             address_text = incident.incident_location?.address_text ?? "UNKNOWN",
             geom = incident.incident_location?.geom,
             household_count = householdCount,
@@ -763,7 +770,86 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             })
             .ToListAsync();
 
-        var items = requests
+        var unresolvedRequests = requests
+            .Where(x => x.adminAreaId == null && x.lat.HasValue && x.lng.HasValue)
+            .ToList();
+
+        var resolvedAreaByRequestId = new Dictionary<Guid, ResolvedAreaInfo>();
+        if (unresolvedRequests.Count > 0)
+        {
+            var areas = await dbContext.admin_areas
+                .AsNoTracking()
+                .Where(x => x.geom != null)
+                .Select(x => new { x.id, x.code, x.name, x.level_code, x.geom })
+                .ToListAsync();
+
+            foreach (var requestItem in unresolvedRequests)
+            {
+                var point = new Point(requestItem.lng!.Value, requestItem.lat!.Value) { SRID = 4326 };
+                var matched = areas
+                    .Where(x => x.geom != null && x.geom.Covers(point))
+                    .OrderBy(x => AdminAreaPriority(x.level_code))
+                    .FirstOrDefault();
+
+                if (matched is not null)
+                {
+                    resolvedAreaByRequestId[requestItem.id] = new ResolvedAreaInfo(matched.id, matched.code, matched.name);
+                }
+            }
+        }
+
+        var enrichedRequests = requests.Select(x =>
+        {
+            if (x.adminAreaId.HasValue)
+            {
+                return new
+                {
+                    x.id,
+                    x.code,
+                    x.status_code,
+                    x.created_at,
+                    x.address_text,
+                    x.lat,
+                    x.lng,
+                    adminAreaId = x.adminAreaId,
+                    adminAreaCode = x.adminAreaCode,
+                    adminAreaName = x.adminAreaName
+                };
+            }
+
+            if (resolvedAreaByRequestId.TryGetValue(x.id, out var resolvedArea))
+            {
+                return new
+                {
+                    x.id,
+                    x.code,
+                    x.status_code,
+                    x.created_at,
+                    x.address_text,
+                    x.lat,
+                    x.lng,
+                    adminAreaId = (Guid?)resolvedArea.Id,
+                    adminAreaCode = resolvedArea.Code,
+                    adminAreaName = resolvedArea.Name
+                };
+            }
+
+            return new
+            {
+                x.id,
+                x.code,
+                x.status_code,
+                x.created_at,
+                x.address_text,
+                x.lat,
+                x.lng,
+                adminAreaId = x.adminAreaId,
+                adminAreaCode = x.adminAreaCode,
+                adminAreaName = x.adminAreaName
+            };
+        }).ToList();
+
+        var items = enrichedRequests
             .GroupBy(x => new
             {
                 x.adminAreaId,
@@ -827,11 +913,38 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
                 top = normalizedTop,
                 fromTime
             },
-            totalRequests = requests.Count,
+            totalRequests = enrichedRequests.Count,
             hotspotCount = items.Count,
             items
         };
     }
+
+    private async Task<Guid?> ResolveAdminAreaIdFromPoint(decimal lat, decimal lng)
+    {
+        var point = new Point((double)lng, (double)lat) { SRID = 4326 };
+
+        var areas = await dbContext.admin_areas
+            .AsNoTracking()
+            .Where(x => x.geom != null)
+            .Select(x => new { x.id, x.level_code, x.geom })
+            .ToListAsync();
+
+        var matched = areas
+            .Where(x => x.geom != null && x.geom.Covers(point))
+            .OrderBy(x => AdminAreaPriority(x.level_code))
+            .FirstOrDefault();
+
+        return matched?.id;
+    }
+
+    private static int AdminAreaPriority(string? levelCode)
+        => levelCode switch
+        {
+            "WARD" => 0,
+            "DISTRICT" => 1,
+            "PROVINCE" => 2,
+            _ => 9
+        };
 
     public async Task<object> ListReliefRequestsForCoordinator(string? statusCode, string? keyword, int page, int pageSize)
     {
@@ -1934,4 +2047,6 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
         string MissionCode,
         string MissionStatusCode,
         DateTime AssignedAt);
+
+    private sealed record ResolvedAreaInfo(Guid Id, string? Code, string? Name);
 }
