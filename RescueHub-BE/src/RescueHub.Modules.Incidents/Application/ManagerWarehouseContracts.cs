@@ -117,16 +117,23 @@ public sealed record RecipientLocationRequest(
 public sealed record CreateDistributionRequest(
     Guid? CampaignId,
     Guid? ReliefPointId,
-    string RecipientName,
-    string? RecipientPhone,
-    Guid? RecipientAdminAreaId,
-    RecipientLocationRequest RecipientLocation,
-    int RecipientMemberCount,
-    int RecipientVulnerableCount,
-    Guid? IncidentId,
+    Guid ReliefRequestId,
+    Guid TeamId,
     CreateDistributionLineRequest[] Lines,
     string AckMethodCode,
     string? Note);
 
 public sealed record DistributionAckRequest(
     string? Note);
+
+public sealed record CreateReliefPointRequest(
+    string Code,
+    string Name,
+    Guid CampaignId,
+    Guid? AdminAreaId,
+    string AddressText,
+    GeoPointRequest Location,
+    Guid? ManagerUserId,
+    string StatusCode,
+    DateTime? OpensAt,
+    DateTime? ClosesAt);

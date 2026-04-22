@@ -66,6 +66,8 @@ public interface IWarehouseManagementRepository
 
     Task<object> ListReliefPoints(string? keyword, string? statusCode);
 
+    Task<object> CreateReliefPoint(CreateReliefPointRequest request);
+
     Task<object> GetDistribution(Guid distributionId);
 
     Task<object> CreateDistribution(CreateDistributionRequest request);

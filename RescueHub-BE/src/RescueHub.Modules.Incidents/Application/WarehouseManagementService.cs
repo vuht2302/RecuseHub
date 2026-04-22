@@ -71,6 +71,8 @@ public sealed class WarehouseManagementService(IWarehouseManagementRepository re
 
     public Task<object> ListReliefPoints(string? keyword, string? statusCode) => repository.ListReliefPoints(keyword, statusCode);
 
+    public Task<object> CreateReliefPoint(CreateReliefPointRequest request) => repository.CreateReliefPoint(request);
+
     public Task<object> GetDistribution(Guid distributionId) => repository.GetDistribution(distributionId);
 
     public Task<object> CreateDistribution(CreateDistributionRequest request) => repository.CreateDistribution(request);
