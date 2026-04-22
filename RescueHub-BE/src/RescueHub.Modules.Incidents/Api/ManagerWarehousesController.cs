@@ -400,6 +400,22 @@ public sealed class ManagerWarehousesController(IWarehouseManagementService serv
         => OkResponse<object>(await service.ListReliefPoints(keyword, statusCode), "Lay danh sach diem cuu tro thanh cong");
 
     /// <summary>
+    /// Tao diem cuu tro.
+    /// </summary>
+    [HttpPost("relief-points")]
+    public async Task<ActionResult<ApiResponse<object>>> CreateReliefPoint([FromBody] CreateReliefPointRequest request)
+    {
+        try
+        {
+            return OkResponse<object>(await service.CreateReliefPoint(request), "Tao diem cuu tro thanh cong");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequestResponse<object>(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Lay chi tiet phieu phan phoi.
     /// </summary>
     /// <param name="distributionId">Dinh danh phieu phan phoi.</param>

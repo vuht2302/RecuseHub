@@ -17,6 +17,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
     private static readonly HashSet<string> StockTransactionTypeCodes = ["RECEIPT", "ISSUE"];
     private static readonly HashSet<string> ReliefIssueStatusCodes = ["DRAFT", "ISSUED", "DELIVERED", "CANCELLED"];
     private static readonly HashSet<string> DistributionStatusCodes = ["PENDING", "COMPLETED", "CANCELLED"];
+    private static readonly HashSet<string> ReliefPointStatusCodes = ["OPEN", "CLOSED", "PAUSED"];
     private static readonly HashSet<string> AckMethodCodes = ["OTP", "MANUAL"];
 
     public async Task<object> ListWarehouses(string? keyword, string? statusCode)
@@ -1284,6 +1285,75 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         return new { items };
     }
 
+    public async Task<object> CreateReliefPoint(CreateReliefPointRequest request)
+    {
+        var code = NormalizeCode(request.Code);
+        var name = NormalizeRequired(request.Name, nameof(request.Name));
+        var addressText = NormalizeRequired(request.AddressText, nameof(request.AddressText));
+        var statusCode = NormalizeCode(request.StatusCode);
+
+        if (request.Location is null)
+        {
+            throw new InvalidOperationException("Location la bat buoc.");
+        }
+
+        if (request.Location.Lat < -90 || request.Location.Lat > 90 ||
+            request.Location.Lng < -180 || request.Location.Lng > 180)
+        {
+            throw new InvalidOperationException("Toa do location khong hop le.");
+        }
+
+        EnsureAllowed(statusCode, ReliefPointStatusCodes, nameof(request.StatusCode));
+
+        await EnsureCampaignExists(request.CampaignId);
+        await EnsureAdminAreaExists(request.AdminAreaId);
+        await EnsureUserExists(request.ManagerUserId);
+
+        if (request.ClosesAt.HasValue && request.OpensAt.HasValue && request.ClosesAt.Value < request.OpensAt.Value)
+        {
+            throw new InvalidOperationException("ClosesAt khong duoc nho hon OpensAt.");
+        }
+
+        if (await dbContext.relief_points.AnyAsync(x => x.code == code))
+        {
+            throw new InvalidOperationException($"Ma diem cuu tro da ton tai: {code}");
+        }
+
+        var campaign = await dbContext.relief_campaigns
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.id == request.CampaignId)
+            ?? throw new InvalidOperationException("Khong tim thay campaign.");
+
+        var entity = new relief_point
+        {
+            id = Guid.NewGuid(),
+            code = code,
+            name = name,
+            campaign_id = request.CampaignId,
+            admin_area_id = request.AdminAreaId,
+            address_text = addressText,
+            geom = new Point((double)request.Location.Lng, (double)request.Location.Lat) { SRID = 4326 },
+            manager_user_id = request.ManagerUserId,
+            status_code = statusCode,
+            opens_at = request.OpensAt,
+            closes_at = request.ClosesAt
+        };
+
+        dbContext.relief_points.Add(entity);
+        await dbContext.SaveChangesAsync();
+
+        return new
+        {
+            id = entity.id,
+            code = entity.code,
+            name = entity.name,
+            statusCode = entity.status_code,
+            addressText = entity.address_text,
+            campaign = new { id = campaign.id, code = campaign.code, name = campaign.name },
+            location = new { lat = request.Location.Lat, lng = request.Location.Lng }
+        };
+    }
+
     public async Task<object> GetDistribution(Guid distributionId)
     {
         var distribution = await dbContext.distributions
@@ -1350,33 +1420,25 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             throw new InvalidOperationException("Danh sach lines khong duoc rong.");
         }
 
-        if (request.RecipientLocation is null)
-        {
-            throw new InvalidOperationException("RecipientLocation la bat buoc.");
-        }
-
-        if (request.RecipientLocation.Lat < -90 || request.RecipientLocation.Lat > 90 ||
-            request.RecipientLocation.Lng < -180 || request.RecipientLocation.Lng > 180)
-        {
-            throw new InvalidOperationException("Toa do RecipientLocation khong hop le.");
-        }
-
-        var recipientName = NormalizeRequired(request.RecipientName, nameof(request.RecipientName));
-        var recipientAddress = NormalizeRequired(request.RecipientLocation.AddressText, nameof(request.RecipientLocation.AddressText));
-        var recipientMemberCount = request.RecipientMemberCount <= 0 ? 1 : request.RecipientMemberCount;
-        var recipientVulnerableCount = request.RecipientVulnerableCount;
-        if (recipientVulnerableCount < 0 || recipientVulnerableCount > recipientMemberCount)
-        {
-            throw new InvalidOperationException("RecipientVulnerableCount khong hop le.");
-        }
-
-        await EnsureAdminAreaExists(request.RecipientAdminAreaId);
-
         await EnsureCampaignExists(request.CampaignId);
         await EnsureReliefPointExists(request.ReliefPointId);
-        await EnsureIncidentExists(request.IncidentId);
+        await EnsureTeamExists(request.TeamId);
 
-        var normalizedRecipientPhone = NormalizeOptional(request.RecipientPhone);
+        var reliefRequest = await dbContext.relief_requests
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.id == request.ReliefRequestId)
+            ?? throw new InvalidOperationException("Khong tim thay relief request.");
+
+        var team = await dbContext.teams
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.id == request.TeamId)
+            ?? throw new InvalidOperationException("Khong tim thay team duoc phan cong.");
+
+        var recipientName = NormalizeRequired(reliefRequest.requester_name, nameof(reliefRequest.requester_name));
+        var recipientAddress = NormalizeRequired(reliefRequest.address_text, nameof(reliefRequest.address_text));
+        var normalizedRecipientPhone = NormalizeOptional(reliefRequest.requester_phone);
+        var recipientMemberCount = reliefRequest.household_count <= 0 ? 1 : reliefRequest.household_count;
+
         var household = await dbContext.households.FirstOrDefaultAsync(x =>
             x.head_name == recipientName &&
             x.address_text == recipientAddress &&
@@ -1390,20 +1452,19 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
                 code = GenerateCode("HH"),
                 head_name = recipientName,
                 phone = normalizedRecipientPhone,
-                admin_area_id = request.RecipientAdminAreaId,
+                admin_area_id = reliefRequest.admin_area_id,
                 address_text = recipientAddress,
-                geom = new Point((double)request.RecipientLocation.Lng, (double)request.RecipientLocation.Lat) { SRID = 4326 },
+                geom = reliefRequest.geom,
                 member_count = recipientMemberCount,
-                vulnerable_count = recipientVulnerableCount
+                vulnerable_count = 0
             };
             dbContext.households.Add(household);
         }
         else
         {
-            household.admin_area_id = request.RecipientAdminAreaId;
+            household.admin_area_id = reliefRequest.admin_area_id;
             household.member_count = recipientMemberCount;
-            household.vulnerable_count = recipientVulnerableCount;
-            household.geom = new Point((double)request.RecipientLocation.Lng, (double)request.RecipientLocation.Lat) { SRID = 4326 };
+            household.geom = reliefRequest.geom;
         }
 
         var ackMethod = NormalizeCode(request.AckMethodCode);
@@ -1417,13 +1478,15 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         {
             id = Guid.NewGuid(),
             code = GenerateCode("DS"),
-            campaign_id = request.CampaignId,
+            campaign_id = request.CampaignId ?? reliefRequest.campaign_id,
             relief_point_id = request.ReliefPointId,
             household_id = household.id,
-            linked_incident_id = request.IncidentId,
+            linked_incident_id = reliefRequest.linked_incident_id,
             ack_method_code = ackMethod,
             status_code = "PENDING",
-            note = NormalizeOptional(request.Note),
+            note = NormalizeOptional(request.Note) is { Length: > 0 } note
+                ? $"TEAM:{team.id}; {note}"
+                : $"TEAM:{team.id}",
             created_by_user_id = null,
             created_at = DateTime.UtcNow
         };
@@ -1480,7 +1543,9 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         {
             distributionId = distribution.id,
             distributionCode = distribution.code,
-            ackCode
+            ackCode,
+            team = new { id = team.id, code = team.code, name = team.name },
+            reliefRequest = new { id = reliefRequest.id, code = reliefRequest.code }
         };
     }
 
@@ -1886,6 +1951,15 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         if (!exists)
         {
             throw new InvalidOperationException($"Khong tim thay incident: {incidentId}");
+        }
+    }
+
+    private async Task EnsureTeamExists(Guid teamId)
+    {
+        var exists = await dbContext.teams.AnyAsync(x => x.id == teamId);
+        if (!exists)
+        {
+            throw new InvalidOperationException($"Khong tim thay team: {teamId}");
         }
     }
 
