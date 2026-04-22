@@ -1009,6 +1009,8 @@ public sealed class DbAdminRepository(
             {
                 adminAreaId = x.Key.admin_area_id,
                 fallbackAddress = x.Key.address_text,
+                lat = x.Average(v => v.lat),
+                lng = x.Average(v => v.lng),
                 incidentCount = x.Count()
             })
             .OrderByDescending(x => x.incidentCount)
@@ -1039,6 +1041,8 @@ public sealed class DbAdminRepository(
                     adminAreaName = (string?)area.name,
                     adminAreaLevelCode = (string?)area.level_code,
                     fallbackAddress = x.fallbackAddress,
+                    lat = x.lat,
+                    lng = x.lng,
                     incidentCount = x.incidentCount
                 };
             }
@@ -1050,6 +1054,8 @@ public sealed class DbAdminRepository(
                 adminAreaName = (string?)null,
                 adminAreaLevelCode = (string?)null,
                 fallbackAddress = x.fallbackAddress,
+                lat = x.lat,
+                lng = x.lng,
                 incidentCount = x.incidentCount
             };
         }).ToArray();
