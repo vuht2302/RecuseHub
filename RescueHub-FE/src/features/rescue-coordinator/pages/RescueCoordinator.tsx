@@ -43,6 +43,7 @@ interface RescueRequest {
     | "assigned"
     | "dispatched"
     | "in-progress"
+    | "rescued"
     | "completed";
   description: string;
   verificationNote: string;
@@ -110,10 +111,10 @@ const RescueCoordinatorPage: React.FC = () => {
       NEW: "pending",
       PENDING: "pending",
       VERIFIED: "verified",
-      ASSESSED: "completed", // ASSESSED is similar to verified, ready for dispatch
+      ASSESSED: "assessed", // Đã đánh giá, sẵn sàng để điều phối
       ASSIGNED: "dispatched",
       IN_PROGRESS: "in-progress",
-      RESCUED: "completed", // Treat rescued as completed
+      RESCUED: "rescued", // Đã cứu hộ
       COMPLETED: "completed",
       CANCELLED: "completed", // Treat cancelled as completed
     };
@@ -312,6 +313,7 @@ const RescueCoordinatorPage: React.FC = () => {
       assigned: "Đã phân công",
       dispatched: "Đã điều phối",
       "in-progress": "Đang xử lý",
+      rescued: "Đã cứu hộ",
       completed: "Hoàn thành",
     };
     return statusLabels[status] || status;
@@ -326,6 +328,7 @@ const RescueCoordinatorPage: React.FC = () => {
       assigned: "bg-indigo-100 text-indigo-800 border-indigo-200",
       dispatched: "bg-blue-100 text-blue-800 border-blue-200",
       "in-progress": "bg-amber-100 text-amber-800 border-amber-200",
+      rescued: "bg-cyan-100 text-cyan-800 border-cyan-200",
       completed: "bg-green-100 text-green-800 border-green-200",
     };
     return statusColors[status] || "bg-gray-100 text-gray-700 border-gray-200";
@@ -472,7 +475,15 @@ const RescueCoordinatorPage: React.FC = () => {
   return (
     <>
       <main
-        className={`p-6 bg-gray-50 ${activeMenu === "map" || activeMenu === "current" ? "h-screen" : "min-h-screen"}`}
+        className={`p-6 bg-gray-50 ${
+          activeMenu === "map" ||
+          activeMenu === "hotspot" ||
+          activeMenu === "relief-requests" ||
+          activeMenu === "current" ||
+          activeMenu === "teams"
+            ? "h-screen overflow-hidden"
+            : "min-h-screen"
+        }`}
         style={{ fontFamily: "var(--font-primary)" }}
       >
         {/* Header */}
@@ -517,9 +528,9 @@ const RescueCoordinatorPage: React.FC = () => {
             activeMenu === "relief-requests" ||
             activeMenu === "current" ||
             activeMenu === "teams"
-              ? "grid grid-cols-1 gap-6"
+              ? "grid grid-cols-1 gap-6 h-[calc(100vh-140px)]"
               : "grid grid-cols-3 gap-6"
-          } ${activeMenu === "map" || activeMenu === "hotspot" || activeMenu === "relief-requests" || activeMenu === "current" ? "h-screen" : ""}`}
+          }`}
         >
           {/* Main Content */}
           <div
@@ -527,7 +538,7 @@ const RescueCoordinatorPage: React.FC = () => {
               activeMenu === "map" ||
               activeMenu === "hotspot" ||
               activeMenu === "teams"
-                ? "col-span-1 h-full flex flex-col"
+                ? "col-span-1 h-full flex flex-col overflow-hidden"
                 : "col-span-2"
             } space-y-6`}
           >
@@ -538,9 +549,9 @@ const RescueCoordinatorPage: React.FC = () => {
             )}
 
             {activeMenu === "overview" && (
-              <>
+              <div className="col-span-2 flex flex-col" style={{ maxHeight: "calc(100vh - 140px)" }}>
                 {/* Stats */}
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-4 gap-4 mb-6 flex-shrink-0">
                   <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-red-500">
                     <p className="text-gray-600 text-sm">Chờ xác minh</p>
                     <p className="text-3xl font-bold text-gray-900">
@@ -571,7 +582,7 @@ const RescueCoordinatorPage: React.FC = () => {
                 </div>
 
                 {/* Incident List */}
-                <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="bg-white rounded-lg shadow-sm p-6 flex-1 overflow-auto">
                   {/* List Header with filter */}
                   <div className="flex items-center justify-between mb-4 gap-3">
                     <div>
@@ -736,7 +747,7 @@ const RescueCoordinatorPage: React.FC = () => {
                     })}
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
             {activeMenu === "tasks" && (

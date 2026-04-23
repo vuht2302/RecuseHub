@@ -23,17 +23,17 @@ import {
 import { createSupportRequest } from "@/src/shared/services/team.service";
 
 const priorityStyles: Record<string, string> = {
-  "Khẩn cấp": "bg-error-container text-error",
+  "Khẩn cấp": "bg-red-100 text-red-700",
   Cao: "bg-amber-100 text-amber-800",
   "Trung bình": "bg-blue-100 text-blue-800",
 };
 
 const statusStyles: Record<MissionStatus, string> = {
-  "Chờ nhận": "bg-surface-container-high text-on-surface-variant",
-  "Đang di chuyển": "bg-blue-950/10 text-blue-950",
+  "Chờ nhận": "bg-gray-100 text-gray-700",
+  "Đang di chuyển": "bg-blue-100 text-blue-800",
   "Đang xử lý": "bg-amber-100 text-amber-800",
   "Đã hoàn tất": "bg-emerald-100 text-emerald-700",
-  "Tạm dừng": "bg-error-container text-error",
+  "Tạm dừng": "bg-red-100 text-red-700",
 };
 
 const mapBackendStatusToUiStatus = (
@@ -44,11 +44,11 @@ const mapBackendStatusToUiStatus = (
   const normalizedResponseStatus = teamResponseStatus?.toUpperCase();
 
   if (normalizedStatusCode === "COMPLETED") {
-    return "Hoàn thành";
+    return "Đã hoàn tất";
   }
 
   if (normalizedStatusCode === "RESCUING") {
-    return "Đang cứu hộ";
+    return "Đang xử lý";
   }
 
   if (
@@ -475,113 +475,120 @@ export const MissionsView: React.FC<MissionsViewProps> = ({
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`text-xs px-2 py-1 rounded-md font-bold uppercase ${priorityStyles[priority]}`}
+                          className={`inline-block text-xs px-2 py-1 rounded-md font-bold uppercase whitespace-nowrap ${priorityStyles[priority]}`}
                         >
                           {priority}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`text-xs px-2 py-1 rounded-md font-semibold ${statusStyles[missionStatus]}`}
+                          className={`inline-block text-xs px-2 py-1 rounded-md font-semibold whitespace-nowrap ${statusStyles[missionStatus]}`}
                         >
                           {missionStatus}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {missionStatus === "Chờ nhận" ? (
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                void handleAcceptMissionClick(
-                                  mission.missionId,
-                                );
-                              }}
-                              disabled={
-                                acceptingMissionId === mission.missionId
-                              }
-                              className="text-xs bg-blue-950 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-900 disabled:bg-gray-400 flex items-center gap-1 transition-colors"
-                            >
-                              {acceptingMissionId === mission.missionId ? (
-                                <>
-                                  <Loader size={14} className="animate-spin" />
-                                  Đang xử lý...
-                                </>
-                              ) : (
-                                "Nhận và xem"
-                              )}
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openSupportModal(mission.missionId);
-                              }}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
-                              title="Yêu cầu hỗ trợ"
-                            >
-                              ⚠️
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openAbortModal(mission.missionId);
-                              }}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-700 hover:bg-red-100"
-                              aria-label="Hủy nhiệm vụ"
-                              title="Hủy nhiệm vụ"
-                            >
-                              <Ban size={16} />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            {onViewMission && (
+                        <div className="flex items-center gap-1.5">
+                          {missionStatus === "Chờ nhận" ? (
+                            <>
                               <button
                                 type="button"
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  onViewMission(
+                                  void handleAcceptMissionClick(
                                     mission.missionId,
-                                    missionStatus,
                                   );
                                 }}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                aria-label="Xem bản đồ"
-                                title="Xem bản đồ"
+                                disabled={
+                                  acceptingMissionId === mission.missionId
+                                }
+                                className="text-xs bg-blue-950 text-white px-2.5 py-1.5 rounded-lg font-bold hover:bg-blue-900 disabled:bg-gray-400 flex items-center gap-1 transition-colors whitespace-nowrap"
                               >
-                                <Eye size={16} />
+                                {acceptingMissionId === mission.missionId ? (
+                                  <>
+                                    <Loader
+                                      size={12}
+                                      className="animate-spin"
+                                    />
+                                    <span className="hidden sm:inline">
+                                      Đang...
+                                    </span>
+                                  </>
+                                ) : (
+                                  "Nhận"
+                                )}
                               </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openDetail(mission.missionId);
-                              }}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-blue-950 text-white hover:bg-blue-900"
-                              aria-label="Xem chi tiết nhiệm vụ"
-                              title="Xem chi tiết nhiệm vụ"
-                            >
-                              <FileText size={16} />
-                            </button>
-                            {missionStatus !== "Đã hoàn tất" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openSupportModal(mission.missionId);
+                                }}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 flex-shrink-0"
+                                title="Yêu cầu hỗ trợ"
+                              >
+                                ⚠️
+                              </button>
                               <button
                                 type="button"
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   openAbortModal(mission.missionId);
                                 }}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-700 hover:bg-red-100"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-700 hover:bg-red-100 flex-shrink-0"
                                 aria-label="Hủy nhiệm vụ"
                                 title="Hủy nhiệm vụ"
                               >
-                                <Ban size={16} />
+                                <Ban size={14} />
                               </button>
-                            )}
-                          </div>
-                        )}
+                            </>
+                          ) : (
+                            <>
+                              {onViewMission && (
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    onViewMission(
+                                      mission.missionId,
+                                      missionStatus,
+                                    );
+                                  }}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 flex-shrink-0"
+                                  aria-label="Xem bản đồ"
+                                  title="Xem bản đồ"
+                                >
+                                  <Eye size={14} />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openDetail(mission.missionId);
+                                }}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-950 text-white hover:bg-blue-900 flex-shrink-0"
+                                aria-label="Xem chi tiết nhiệm vụ"
+                                title="Xem chi tiết"
+                              >
+                                <FileText size={14} />
+                              </button>
+                              {missionStatus !== "Đã hoàn tất" && (
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    openAbortModal(mission.missionId);
+                                  }}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-700 hover:bg-red-100 flex-shrink-0"
+                                  aria-label="Hủy nhiệm vụ"
+                                  title="Hủy nhiệm vụ"
+                                >
+                                  <Ban size={14} />
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
