@@ -21,6 +21,7 @@ import {
   SquareMenu,
   TrendingUp,
   PackageCheck,
+  History,
 } from "lucide-react";
 import {
   useManager,
@@ -132,6 +133,7 @@ const rescueTeamMenuItems: RescueTeamMenuItem[] = [
   { icon: Map, label: "Bản đồ nhiệm vụ", id: "map" },
   { icon: FolderKanban, label: "Nhiệm vụ", id: "missions" },
   { icon: UserRound, label: "Trạng thái đội ngũ", id: "team" },
+  { icon: History, label: "Lịch sử cứu trợ", id: "relief-history" },
 ];
 
 interface CitizenMenuItem {

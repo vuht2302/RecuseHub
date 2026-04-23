@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   MapPin,
   Phone,
@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { UiTeamMember, TeamViewProps } from "../types/mission";
+import { updateTeamStatus } from "../services/teamDashboardService";
 
 const LEVEL_LABELS: Record<string, string> = {
   LEVEL_1: "Sơ cấp",
@@ -212,12 +213,17 @@ export const TeamView: React.FC<TeamViewProps> = ({
   onRetry,
   onReloadData,
   isReloadingData = false,
+  currentTeamStatus = "AVAILABLE",
+  onStatusUpdated,
 }) => {
-  const [members, setMembers] = React.useState<UiTeamMember[]>(teamMembers);
-  const [selectedMember, setSelectedMember] =
-    React.useState<UiTeamMember | null>(null);
+  const [members, setMembers] = useState<UiTeamMember[]>(teamMembers);
+  const [selectedMember, setSelectedMember] = useState<UiTeamMember | null>(
+    null,
+  );
+  const [isToggling, setIsToggling] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setMembers(teamMembers);
   }, [teamMembers]);
 
@@ -227,11 +233,22 @@ export const TeamView: React.FC<TeamViewProps> = ({
   const unavailableCount = members.length - availableCount;
   const allAvailable = members.length > 0 && unavailableCount === 0;
 
-  const handleUpdateAllStatuses = () => {
-    const nextStatus = allAvailable ? "Không sẵn sàng" : "Sẵn sàng";
-    setMembers((prev) =>
-      prev.map((member) => ({ ...member, status: nextStatus })),
-    );
+  const isTeamOn = currentTeamStatus === "AVAILABLE";
+
+  const handleToggleTeamStatus = async () => {
+    const nextStatus = isTeamOn ? "UNAVAILABLE" : "AVAILABLE";
+
+    setIsToggling(true);
+    setToggleError(null);
+
+    try {
+      await updateTeamStatus({ statusCode: nextStatus });
+      onStatusUpdated?.();
+    } catch (err) {
+      setToggleError(err instanceof Error ? err.message : "Cập nhật thất bại");
+    } finally {
+      setIsToggling(false);
+    }
   };
 
   return (
@@ -274,23 +291,26 @@ export const TeamView: React.FC<TeamViewProps> = ({
             {isLeader && (
               <button
                 type="button"
-                onClick={handleUpdateAllStatuses}
-                aria-pressed={allAvailable}
-                className={`group inline-flex items-center gap-2 rounded-full px-2 py-1.5 text-xs font-bold font-primary text-white whitespace-nowrap transition-colors ${
-                  allAvailable
+                onClick={() => {
+                  void handleToggleTeamStatus();
+                }}
+                disabled={isToggling}
+                aria-pressed={isTeamOn}
+                className={`group inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold font-primary text-white whitespace-nowrap transition-colors disabled:opacity-60 ${
+                  isTeamOn
                     ? "bg-emerald-600 hover:bg-emerald-700"
                     : "bg-slate-600 hover:bg-slate-700"
                 }`}
               >
-                <span className="px-1">{allAvailable ? "ON" : "OFF"}</span>
+                <span>{isTeamOn ? "ON" : "OFF"}</span>
                 <span
                   className={`h-5 w-9 rounded-full p-0.5 transition-colors ${
-                    allAvailable ? "bg-emerald-400/70" : "bg-white/30"
+                    isTeamOn ? "bg-emerald-400/70" : "bg-white/30"
                   }`}
                 >
                   <span
                     className={`block h-4 w-4 rounded-full bg-white transition-transform ${
-                      allAvailable ? "translate-x-4" : "translate-x-0"
+                      isTeamOn ? "translate-x-4" : "translate-x-0"
                     }`}
                   />
                 </span>
@@ -345,9 +365,6 @@ export const TeamView: React.FC<TeamViewProps> = ({
                     Thành viên
                   </th>
                   <th className="px-4 py-3 font-primary font-bold">Vai trò</th>
-                  <th className="px-4 py-3 font-primary font-bold">
-                    Trạng thái
-                  </th>
                   <th className="px-4 py-3 font-primary font-bold">Thao tác</th>
                 </tr>
               </thead>
@@ -400,26 +417,6 @@ export const TeamView: React.FC<TeamViewProps> = ({
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                          isAvailable(member.status)
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-rose-100 text-rose-700"
-                        }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            isAvailable(member.status)
-                              ? "bg-emerald-500"
-                              : "bg-rose-500"
-                          }`}
-                        />
-                        {isAvailable(member.status)
-                          ? "Sẵn sàng"
-                          : "Không sẵn sàng"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
                       <button
                         type="button"
                         onClick={() => setSelectedMember(member)}
@@ -434,7 +431,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
                   <tr>
                     <td
                       className="px-4 py-6 text-sm text-gray-500 text-center"
-                      colSpan={4}
+                      colSpan={3}
                     >
                       Chưa có thành viên trong đội.
                     </td>

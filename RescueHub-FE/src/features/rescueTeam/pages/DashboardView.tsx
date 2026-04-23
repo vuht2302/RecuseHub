@@ -29,15 +29,15 @@ const mapBackendStatusToVietnamese = (statusCode: string): string => {
 // Map backend status codes to appropriate colors
 const mapBackendStatusToColor = (statusCode: string): string => {
   const colorMap: Record<string, string> = {
-    EN_ROUTE: "#3B82F6", // Blue - Đang di chuyển
-    COMPLETED: "#10B981", // Emerald - Đã hoàn tất
-    RESCUING: "#F59E0B", // Amber - Đang xử lý
-    ON_SITE: "#F59E0B", // Amber - Đang xử lý
-    ARRIVED: "#8B5CF6", // Violet - Đã đến nơi
-    PENDING: "#6B7280", // Gray - Chờ nhận
-    ACCEPTED: "#14B8A6", // Teal - Đã tiếp nhận
-    CANCELLED: "#EF4444", // Red - Đã hủy
-    ABORTED: "#EF4444", // Red - Đã hủy
+    EN_ROUTE: "#3B82F6",
+    COMPLETED: "#10B981",
+    RESCUING: "#F59E0B",
+    ON_SITE: "#F59E0B",
+    ARRIVED: "#8B5CF6",
+    PENDING: "#6B7280",
+    ACCEPTED: "#14B8A6",
+    CANCELLED: "#EF4444",
+    ABORTED: "#EF4444",
   };
 
   return colorMap[statusCode] || "#3B82F6";

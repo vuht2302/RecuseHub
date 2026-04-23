@@ -4,6 +4,7 @@ import { useRescueTeam } from "../../../shared/context/RescueTeamContext";
 import { DashboardView } from "./DashboardView";
 import { MapView } from "./MapView";
 import { MissionsView } from "./MissionsView";
+import { ReliefHistoryView } from "./ReliefHistoryView";
 import { TeamView } from "./TeamView";
 import {
   getTeamDashboard,
@@ -619,8 +620,13 @@ export const RescueTeamMission: React.FC = () => {
               onRetry={() => {
                 void loadTeamMembers();
               }}
+              onStatusUpdated={() => {
+                void loadDashboard();
+              }}
             />
           )}
+
+          {activeMenu === "relief-history" && <ReliefHistoryView />}
         </div>
       </section>
     </div>
