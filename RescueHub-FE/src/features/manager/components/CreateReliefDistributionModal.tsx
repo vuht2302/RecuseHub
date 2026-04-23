@@ -317,7 +317,8 @@ export function CreateReliefDistributionModal({
           .filter((s) => s.qtyAvailable > 0)
           .map((s) => itemsWithLots.find((i) => i.id === s.item.id))
           .filter((item): item is ItemWithLots => item != null)
-      : itemsWithLots.filter((item) => item.isActive && item.lots.length > 0);
+          .filter((item, index, self) => self.findIndex(i => i.id === item.id) === index)
+      : itemsWithLots.filter((item) => item.isActive && item.lots && item.lots.length > 0);
 
   // Get lots for item
   const getLotsForItem = (itemId: string) => {
