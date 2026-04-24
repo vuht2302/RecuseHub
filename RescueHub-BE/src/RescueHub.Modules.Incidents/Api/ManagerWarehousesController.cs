@@ -296,6 +296,77 @@ public sealed class ManagerWarehousesController(IWarehouseManagementService serv
     }
 
     /// <summary>
+    /// Lay danh sach chien dich cuu tro.
+    /// </summary>
+    [HttpGet("relief-campaigns")]
+    public async Task<ActionResult<ApiResponse<object>>> ListReliefCampaigns([FromQuery] string? keyword, [FromQuery] string? statusCode)
+        => OkResponse<object>(await service.ListReliefCampaigns(keyword, statusCode), "Lay danh sach chien dich thanh cong");
+
+    /// <summary>
+    /// Lay chi tiet chien dich cuu tro.
+    /// </summary>
+    [HttpGet("relief-campaigns/{campaignId:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> GetReliefCampaign([FromRoute] Guid campaignId)
+    {
+        try
+        {
+            return OkResponse<object>(await service.GetReliefCampaign(campaignId), "Lay chi tiet chien dich thanh cong");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequestResponse<object>(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Tao chien dich cuu tro.
+    /// </summary>
+    [HttpPost("relief-campaigns")]
+    public async Task<ActionResult<ApiResponse<object>>> CreateReliefCampaign([FromBody] CreateReliefCampaignRequest request)
+    {
+        try
+        {
+            return OkResponse<object>(await service.CreateReliefCampaign(request), "Tao chien dich thanh cong");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequestResponse<object>(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Cap nhat chien dich cuu tro.
+    /// </summary>
+    [HttpPut("relief-campaigns/{campaignId:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateReliefCampaign([FromRoute] Guid campaignId, [FromBody] UpdateReliefCampaignRequest request)
+    {
+        try
+        {
+            return OkResponse<object>(await service.UpdateReliefCampaign(campaignId, request), "Cap nhat chien dich thanh cong");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequestResponse<object>(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Xoa chien dich cuu tro (soft delete).
+    /// </summary>
+    [HttpDelete("relief-campaigns/{campaignId:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeleteReliefCampaign([FromRoute] Guid campaignId)
+    {
+        try
+        {
+            return OkResponse<object>(await service.DeleteReliefCampaign(campaignId), "Xoa chien dich thanh cong");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequestResponse<object>(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Tao phieu cap phat tu kho den diem cuu tro.
     /// </summary>
     /// <param name="request">Thong tin cap phat va danh sach hang cap.</param>

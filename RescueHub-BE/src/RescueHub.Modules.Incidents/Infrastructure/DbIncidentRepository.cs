@@ -1490,7 +1490,9 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
     {
         var teams = await dbContext.teams
             .AsNoTracking()
-            .Where(x => x.leader_user_id == leaderUserId)
+            .Where(x =>
+                x.leader_user_id == leaderUserId ||
+                x.team_members.Any(m => m.user_id == leaderUserId && m.is_team_leader))
             .Include(x => x.team_members)
             .ThenInclude(x => x.user)
             .Include(x => x.team_members)
@@ -1581,7 +1583,9 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
         }
 
         var teams = await dbContext.teams
-            .Where(x => x.leader_user_id == leaderUserId)
+            .Where(x =>
+                x.leader_user_id == leaderUserId ||
+                x.team_members.Any(m => m.user_id == leaderUserId && m.is_team_leader))
             .ToListAsync();
 
         if (teams.Count == 0)
@@ -1868,6 +1872,12 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             _ => actionCode
         };
 
+        if (string.Equals(mission.status_code, "ABORT_PENDING", StringComparison.Ordinal) &&
+            !string.Equals(mappedStateCode, "ABORTED", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Mission dang cho duyet huy, chi cho phep chuyen sang ABORTED.");
+        }
+
         var fromStatus = mission.status_code;
         var now = DateTime.UtcNow;
         mission.status_code = mappedStateCode;
@@ -1935,7 +1945,7 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
 
         string? targetIncidentStatus = mission.status_code switch
         {
-            "EN_ROUTE" or "ON_SITE" or "RESCUING" or "NEED_SUPPORT" => "IN_PROGRESS",
+            "EN_ROUTE" or "ON_SITE" or "RESCUING" or "NEED_SUPPORT" or "ABORT_PENDING" => "IN_PROGRESS",
             "COMPLETED" => incident.need_relief ? "RELIEF_REQUIRED" : "RESCUED",
             _ => null
         };
@@ -2052,6 +2062,10 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
         }
 
         var now = DateTime.UtcNow;
+        var fromStatus = mission.status_code;
+        mission.status_code = "ABORT_PENDING";
+        mission.updated_at = now;
+
         var abortRequest = new mission_abort_request
         {
             id = Guid.NewGuid(),
@@ -2067,12 +2081,14 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
         {
             id = Guid.NewGuid(),
             mission_id = missionId,
-            from_status_code = mission.status_code,
+            from_status_code = fromStatus,
             to_status_code = mission.status_code,
             action_code = "REQUEST_ABORT",
             changed_at = now,
             note = request.DetailNote
         });
+
+        await SyncIncidentStatusFromMission(mission, now, request.DetailNote);
 
         await dbContext.SaveChangesAsync();
 
@@ -2081,6 +2097,7 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             missionId,
             requestId = abortRequest.id,
             status = abortRequest.status_code,
+            missionStatusCode = mission.status_code,
             requestedAt = now
         };
     }
@@ -2227,7 +2244,9 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
     {
         var teams = await dbContext.teams
             .AsNoTracking()
-            .Where(x => x.leader_user_id == leaderUserId)
+            .Where(x =>
+                x.leader_user_id == leaderUserId ||
+                x.team_members.Any(m => m.user_id == leaderUserId && m.is_team_leader))
             .OrderBy(x => x.code)
             .Select(x => new { x.id, x.code, x.name })
             .ToListAsync();

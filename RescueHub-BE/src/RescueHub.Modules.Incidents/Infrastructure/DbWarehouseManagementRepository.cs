@@ -18,6 +18,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
     private static readonly HashSet<string> ReliefIssueStatusCodes = ["DRAFT", "ISSUED", "DELIVERED", "CANCELLED"];
     private static readonly HashSet<string> DistributionStatusCodes = ["PENDING", "COMPLETED", "CANCELLED"];
     private static readonly HashSet<string> ReliefPointStatusCodes = ["OPEN", "CLOSED", "PAUSED"];
+    private static readonly HashSet<string> CampaignStatusCodes = ["PLANNED", "ACTIVE", "CLOSED", "CANCELLED"];
     private static readonly HashSet<string> AckMethodCodes = ["OTP", "MANUAL"];
 
     public async Task<object> ListWarehouses(string? keyword, string? statusCode)
@@ -1177,6 +1178,155 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         return new { items, page, pageSize, totalItems, totalPages };
     }
 
+    public async Task<object> ListReliefCampaigns(string? keyword, string? statusCode)
+    {
+        var query = dbContext.relief_campaigns
+            .AsNoTracking()
+            .Include(x => x.admin_area)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var q = keyword.Trim();
+            query = query.Where(x => x.code.Contains(q) || x.name.Contains(q));
+        }
+
+        if (!string.IsNullOrWhiteSpace(statusCode))
+        {
+            var normalized = NormalizeCode(statusCode);
+            query = query.Where(x => x.status_code == normalized);
+        }
+
+        var items = await query
+            .OrderByDescending(x => x.start_at)
+            .ThenBy(x => x.code)
+            .Select(x => new
+            {
+                id = x.id,
+                code = x.code,
+                name = x.name,
+                status = new { code = x.status_code, name = x.status_code, color = (string?)null },
+                adminArea = x.admin_area == null ? null : new { id = x.admin_area.id, code = x.admin_area.code, name = x.admin_area.name },
+                startAt = x.start_at,
+                endAt = x.end_at,
+                description = x.description,
+                reliefPointCount = x.relief_points.Count
+            })
+            .ToListAsync();
+
+        return new { items };
+    }
+
+    public async Task<object> GetReliefCampaign(Guid campaignId)
+    {
+        var campaign = await dbContext.relief_campaigns
+            .AsNoTracking()
+            .Include(x => x.admin_area)
+            .Include(x => x.relief_points)
+            .FirstOrDefaultAsync(x => x.id == campaignId)
+            ?? throw new InvalidOperationException("Khong tim thay chien dich.");
+
+        return new
+        {
+            id = campaign.id,
+            code = campaign.code,
+            name = campaign.name,
+            status = new { code = campaign.status_code, name = campaign.status_code, color = (string?)null },
+            adminArea = campaign.admin_area == null ? null : new { id = campaign.admin_area.id, code = campaign.admin_area.code, name = campaign.admin_area.name },
+            startAt = campaign.start_at,
+            endAt = campaign.end_at,
+            description = campaign.description,
+            reliefPoints = campaign.relief_points
+                .OrderBy(x => x.code)
+                .Select(x => new
+                {
+                    id = x.id,
+                    code = x.code,
+                    name = x.name,
+                    statusCode = x.status_code
+                })
+                .ToList()
+        };
+    }
+
+    public async Task<object> CreateReliefCampaign(CreateReliefCampaignRequest request)
+    {
+        var code = NormalizeCode(request.Code);
+        var name = NormalizeRequired(request.Name, nameof(request.Name));
+        var statusCode = NormalizeCode(request.StatusCode);
+        EnsureAllowed(statusCode, CampaignStatusCodes, nameof(request.StatusCode));
+        ValidateCampaignDates(request.StartAt, request.EndAt);
+
+        await EnsureAdminAreaExists(request.AdminAreaId);
+
+        if (await dbContext.relief_campaigns.AnyAsync(x => x.code == code))
+        {
+            throw new InvalidOperationException($"Ma chien dich da ton tai: {code}");
+        }
+
+        var entity = new relief_campaign
+        {
+            id = Guid.NewGuid(),
+            code = code,
+            name = name,
+            status_code = statusCode,
+            linked_incident_id = null,
+            admin_area_id = request.AdminAreaId,
+            start_at = request.StartAt,
+            end_at = request.EndAt,
+            description = NormalizeOptional(request.Description)
+        };
+
+        dbContext.relief_campaigns.Add(entity);
+        await AssignCampaignReliefPoints(entity.id, request.ReliefPointIds);
+        await dbContext.SaveChangesAsync();
+
+        return new { id = entity.id, code = entity.code, created = true };
+    }
+
+    public async Task<object> UpdateReliefCampaign(Guid campaignId, UpdateReliefCampaignRequest request)
+    {
+        var entity = await dbContext.relief_campaigns.FirstOrDefaultAsync(x => x.id == campaignId)
+            ?? throw new InvalidOperationException("Khong tim thay chien dich.");
+
+        var code = NormalizeCode(request.Code);
+        var name = NormalizeRequired(request.Name, nameof(request.Name));
+        var statusCode = NormalizeCode(request.StatusCode);
+        EnsureAllowed(statusCode, CampaignStatusCodes, nameof(request.StatusCode));
+        ValidateCampaignDates(request.StartAt, request.EndAt);
+
+        await EnsureAdminAreaExists(request.AdminAreaId);
+
+        if (await dbContext.relief_campaigns.AnyAsync(x => x.id != campaignId && x.code == code))
+        {
+            throw new InvalidOperationException($"Ma chien dich da ton tai: {code}");
+        }
+
+        entity.code = code;
+        entity.name = name;
+        entity.admin_area_id = request.AdminAreaId;
+        entity.start_at = request.StartAt;
+        entity.end_at = request.EndAt;
+        entity.status_code = statusCode;
+        entity.description = NormalizeOptional(request.Description);
+
+        await AssignCampaignReliefPoints(entity.id, request.ReliefPointIds);
+        await dbContext.SaveChangesAsync();
+
+        return new { id = entity.id, code = entity.code, updated = true };
+    }
+
+    public async Task<object> DeleteReliefCampaign(Guid campaignId)
+    {
+        var entity = await dbContext.relief_campaigns.FirstOrDefaultAsync(x => x.id == campaignId)
+            ?? throw new InvalidOperationException("Khong tim thay chien dich.");
+
+        entity.status_code = "CANCELLED";
+        await dbContext.SaveChangesAsync();
+
+        return new { id = entity.id, deleted = true, mode = "SOFT_CANCEL" };
+    }
+
     public async Task<object> UpdateReliefRequestStatus(Guid reliefRequestId, UpdateReliefRequestStatusRequest request)
     {
         var entity = await dbContext.relief_requests.FirstOrDefaultAsync(x => x.id == reliefRequestId)
@@ -1316,9 +1466,6 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         }
 
         EnsureAllowed(statusCode, ReliefPointStatusCodes, nameof(request.StatusCode));
-
-        await EnsureCampaignExists(request.CampaignId);
-        await EnsureAdminAreaExists(request.AdminAreaId);
         await EnsureUserExists(request.ManagerUserId);
 
         if (await dbContext.relief_points.AnyAsync(x => x.code == code))
@@ -1326,18 +1473,16 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             throw new InvalidOperationException($"Ma diem cuu tro da ton tai: {code}");
         }
 
-        var campaign = await dbContext.relief_campaigns
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.id == request.CampaignId)
-            ?? throw new InvalidOperationException("Khong tim thay campaign.");
+        var adminAreaId = await ResolveAdminAreaIdFromLocation(new GeoPointRequest(request.Location.Lat, request.Location.Lng));
+        var campaign = await ResolveCampaignForReliefPoint(adminAreaId);
 
         var entity = new relief_point
         {
             id = Guid.NewGuid(),
             code = code,
             name = name,
-            campaign_id = request.CampaignId,
-            admin_area_id = request.AdminAreaId,
+            campaign_id = campaign.id,
+            admin_area_id = adminAreaId,
             address_text = addressText,
             geom = new Point((double)request.Location.Lng, (double)request.Location.Lat) { SRID = 4326 },
             manager_user_id = request.ManagerUserId,
@@ -1357,6 +1502,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             statusCode = entity.status_code,
             addressText = entity.address_text,
             campaign = new { id = campaign.id, code = campaign.code, name = campaign.name },
+            adminAreaId,
             location = new { lat = request.Location.Lat, lng = request.Location.Lng }
         };
     }
@@ -2010,6 +2156,42 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         return fallback.id;
     }
 
+    private async Task<relief_campaign> ResolveCampaignForReliefPoint(Guid? adminAreaId)
+    {
+        var now = DateTime.UtcNow;
+        var query = dbContext.relief_campaigns
+            .AsNoTracking()
+            .Where(x =>
+                x.status_code == "PLANNED" ||
+                x.status_code == "ACTIVE" ||
+                (x.start_at <= now && x.status_code != "CLOSED" && x.status_code != "CANCELLED"))
+            .AsQueryable();
+
+        if (adminAreaId.HasValue)
+        {
+            query = query.Where(x => x.admin_area_id == adminAreaId.Value);
+        }
+
+        var campaign = await query
+            .OrderByDescending(x => x.status_code == "ACTIVE")
+            .ThenByDescending(x => x.start_at)
+            .FirstOrDefaultAsync();
+
+        if (campaign is not null)
+        {
+            return campaign;
+        }
+
+        campaign = await dbContext.relief_campaigns
+            .AsNoTracking()
+            .Where(x => x.status_code == "PLANNED" || x.status_code == "ACTIVE")
+            .OrderByDescending(x => x.status_code == "ACTIVE")
+            .ThenByDescending(x => x.start_at)
+            .FirstOrDefaultAsync();
+
+        return campaign ?? throw new InvalidOperationException("Khong tim thay chien dich cuu tro de gan diem cuu tro.");
+    }
+
     private async Task<Guid?> ResolveAdminAreaIdFromLocation(GeoPointRequest? location)
     {
         if (location is null)
@@ -2082,6 +2264,38 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         }
     }
 
+    private async Task AssignCampaignReliefPoints(Guid campaignId, Guid[]? reliefPointIds)
+    {
+        if (reliefPointIds is null)
+        {
+            return;
+        }
+
+        var normalizedIds = reliefPointIds
+            .Where(x => x != Guid.Empty)
+            .Distinct()
+            .ToArray();
+
+        if (normalizedIds.Length == 0)
+        {
+            return;
+        }
+
+        var reliefPoints = await dbContext.relief_points
+            .Where(x => normalizedIds.Contains(x.id))
+            .ToListAsync();
+
+        if (reliefPoints.Count != normalizedIds.Length)
+        {
+            throw new InvalidOperationException("Co relief point khong hop le trong danh sach ReliefPointIds.");
+        }
+
+        foreach (var reliefPoint in reliefPoints)
+        {
+            reliefPoint.campaign_id = campaignId;
+        }
+    }
+
     private async Task EnsureReliefPointExists(Guid? reliefPointId)
     {
         if (!reliefPointId.HasValue)
@@ -2133,6 +2347,14 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         if (mfgDate.HasValue && expDate.HasValue && expDate.Value < mfgDate.Value)
         {
             throw new InvalidOperationException("ExpDate khong duoc nho hon MfgDate.");
+        }
+    }
+
+    private static void ValidateCampaignDates(DateTime startAt, DateTime? endAt)
+    {
+        if (endAt.HasValue && endAt.Value < startAt)
+        {
+            throw new InvalidOperationException("EndAt khong duoc nho hon StartAt.");
         }
     }
 
