@@ -122,6 +122,26 @@ public sealed record CreateDistributionRequest(
 public sealed record DistributionAckRequest(
     string? Note);
 
+public sealed record CreateReliefCampaignRequest(
+    string Code,
+    string Name,
+    Guid? AdminAreaId,
+    DateTime StartAt,
+    DateTime? EndAt,
+    string StatusCode,
+    string? Description,
+    Guid[]? ReliefPointIds);
+
+public sealed record UpdateReliefCampaignRequest(
+    string Code,
+    string Name,
+    Guid? AdminAreaId,
+    DateTime StartAt,
+    DateTime? EndAt,
+    string StatusCode,
+    string? Description,
+    Guid[]? ReliefPointIds);
+
 public sealed record UpdateReliefRequestStatusRequest(
     string StatusCode,
     string? Note);
@@ -134,8 +154,6 @@ public sealed record ReliefPointLocationRequest(
 public sealed record CreateReliefPointRequest(
     string Code,
     string Name,
-    Guid CampaignId,
-    Guid? AdminAreaId,
     ReliefPointLocationRequest Location,
     Guid? ManagerUserId,
     string StatusCode);

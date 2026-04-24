@@ -67,6 +67,21 @@ public sealed class WarehouseManagementService(IWarehouseManagementRepository re
     public Task<object> ListDistributions(Guid? campaignId, Guid? reliefPointId, string? statusCode, int page, int pageSize)
         => repository.ListDistributions(campaignId, reliefPointId, statusCode, page, pageSize);
 
+    public Task<object> ListReliefCampaigns(string? keyword, string? statusCode)
+        => repository.ListReliefCampaigns(keyword, statusCode);
+
+    public Task<object> GetReliefCampaign(Guid campaignId)
+        => repository.GetReliefCampaign(campaignId);
+
+    public Task<object> CreateReliefCampaign(CreateReliefCampaignRequest request)
+        => repository.CreateReliefCampaign(request);
+
+    public Task<object> UpdateReliefCampaign(Guid campaignId, UpdateReliefCampaignRequest request)
+        => repository.UpdateReliefCampaign(campaignId, request);
+
+    public Task<object> DeleteReliefCampaign(Guid campaignId)
+        => repository.DeleteReliefCampaign(campaignId);
+
     public Task<object> UpdateReliefRequestStatus(Guid reliefRequestId, UpdateReliefRequestStatusRequest request)
         => repository.UpdateReliefRequestStatus(reliefRequestId, request);
 
