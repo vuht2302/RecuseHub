@@ -61,6 +61,12 @@ const managerMenuItems: ManagerMenuItem[] = [
     icon: Car,
     color: "text-black-600",
   },
+  {
+    id: "rescue-team",
+    label: "Quan ly doi cuu ho",
+    icon: Users,
+    color: "text-black-600",
+  },
 
   {
     id: "relief-distribution",
@@ -120,7 +126,8 @@ type RescueTeamMenuItemType =
   | "map"
   | "missions"
   | "team"
-  | "reports";
+  | "reports"
+  | "relief-history";
 
 interface RescueTeamMenuItem {
   icon: React.ComponentType<{ size?: number; className?: string }>;
