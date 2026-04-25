@@ -31,7 +31,7 @@ public partial class relief_campaign
 
     public virtual ICollection<relief_issue> relief_issues { get; set; } = new List<relief_issue>();
 
-    public virtual ICollection<relief_point> relief_points { get; set; } = new List<relief_point>();
+    public virtual ICollection<campaign_relief_point> campaign_relief_points { get; set; } = new List<campaign_relief_point>();
 
     public virtual ICollection<relief_request> relief_requests { get; set; } = new List<relief_request>();
 }

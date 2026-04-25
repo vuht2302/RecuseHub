@@ -30,6 +30,9 @@ public sealed class IncidentService(IIncidentRepository repository) : IIncidentS
     public Task<object> GetReliefRequestHotspotsForCoordinator(string? statusCode, int days, int top)
         => repository.GetReliefRequestHotspotsForCoordinator(statusCode, days, top);
 
+    public Task<object> GetReliefRequestHotspotDetailForCoordinator(Guid adminAreaId, string? statusCode, int days, int page, int pageSize)
+        => repository.GetReliefRequestHotspotDetailForCoordinator(adminAreaId, statusCode, days, page, pageSize);
+
     public Task<object> ListReliefRequestsForCoordinator(string? statusCode, string? keyword, int page, int pageSize)
         => repository.ListReliefRequestsForCoordinator(statusCode, keyword, page, pageSize);
 

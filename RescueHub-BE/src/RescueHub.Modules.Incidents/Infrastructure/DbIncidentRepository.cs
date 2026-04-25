@@ -968,6 +968,117 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
         };
     }
 
+    public async Task<object> GetReliefRequestHotspotDetailForCoordinator(Guid adminAreaId, string? statusCode, int days, int page, int pageSize)
+    {
+        var adminArea = await dbContext.admin_areas
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.id == adminAreaId)
+            ?? throw new InvalidOperationException("Khong tim thay admin area.");
+
+        var normalizedDays = days <= 0 ? 30 : Math.Min(days, 180);
+        var normalizedPage = page <= 0 ? 1 : page;
+        var normalizedPageSize = pageSize <= 0 ? 20 : Math.Min(pageSize, 200);
+        var fromTime = DateTime.UtcNow.AddDays(-normalizedDays);
+        var normalizedStatusCode = string.IsNullOrWhiteSpace(statusCode)
+            ? null
+            : statusCode.Trim().ToUpperInvariant();
+
+        var requestQuery = dbContext.relief_requests
+            .AsNoTracking()
+            .Include(x => x.campaign)
+            .Include(x => x.linked_incident)
+            .Where(x => x.created_at >= fromTime && x.admin_area_id == adminAreaId)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(normalizedStatusCode) &&
+            !string.Equals(normalizedStatusCode, "ALL", StringComparison.Ordinal))
+        {
+            requestQuery = requestQuery.Where(x => x.status_code == normalizedStatusCode);
+        }
+
+        var totalItems = await requestQuery.CountAsync();
+
+        var items = await requestQuery
+            .OrderByDescending(x => x.created_at)
+            .Skip((normalizedPage - 1) * normalizedPageSize)
+            .Take(normalizedPageSize)
+            .Select(x => new
+            {
+                reliefRequestId = x.id,
+                requestCode = x.code,
+                status = new { code = x.status_code, name = x.status_code, color = (string?)null },
+                requester = new { name = x.requester_name, phone = x.requester_phone },
+                householdCount = x.household_count,
+                addressText = x.address_text,
+                location = new
+                {
+                    lat = x.geom == null ? (double?)null : x.geom.Y,
+                    lng = x.geom == null ? (double?)null : x.geom.X
+                },
+                campaign = x.campaign_id == null
+                    ? null
+                    : new
+                    {
+                        id = x.campaign_id,
+                        code = x.campaign != null ? x.campaign.code : null,
+                        name = x.campaign != null ? x.campaign.name : null
+                    },
+                incident = x.linked_incident_id == null
+                    ? null
+                    : new
+                    {
+                        id = x.linked_incident_id,
+                        code = x.linked_incident != null ? x.linked_incident.code : null
+                    },
+                requestedAt = x.created_at
+            })
+            .ToListAsync();
+
+        var summaryData = await requestQuery
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                requestCount = g.Count(),
+                pendingCount = g.Count(x => x.status_code == "NEW" || x.status_code == "APPROVED"),
+                fulfilledCount = g.Count(x => x.status_code == "FULFILLED"),
+                rejectedCount = g.Count(x => x.status_code == "REJECTED"),
+                cancelledCount = g.Count(x => x.status_code == "CANCELLED")
+            })
+            .FirstOrDefaultAsync();
+
+        var campaignBreakdown = await requestQuery
+            .Where(x => x.campaign_id.HasValue)
+            .GroupBy(x => new
+            {
+                x.campaign_id,
+                campaignCode = x.campaign != null ? x.campaign.code : null,
+                campaignName = x.campaign != null ? x.campaign.name : null
+            })
+            .OrderByDescending(g => g.Count())
+            .Select(g => new
+            {
+                campaignId = g.Key.campaign_id,
+                campaignCode = g.Key.campaignCode,
+                campaignName = g.Key.campaignName,
+                requestCount = g.Count(),
+                pendingCount = g.Count(x => x.status_code == "NEW" || x.status_code == "APPROVED"),
+                latestRequestedAt = g.Max(x => x.created_at)
+            })
+            .ToListAsync();
+
+        var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)normalizedPageSize);
+        return new
+        {
+            adminArea = new { id = adminArea.id, code = adminArea.code, name = adminArea.name, levelCode = adminArea.level_code },
+            filters = new { statusCode = normalizedStatusCode, days = normalizedDays, fromTime, page = normalizedPage, pageSize = normalizedPageSize },
+            summary = summaryData ?? new { requestCount = 0, pendingCount = 0, fulfilledCount = 0, rejectedCount = 0, cancelledCount = 0 },
+            campaignBreakdown,
+            items,
+            totalItems,
+            totalPages
+        };
+    }
+
     private async Task<Guid?> ResolveAdminAreaIdFromPoint(decimal lat, decimal lng)
     {
         var point = new Point((double)lng, (double)lat) { SRID = 4326 };
@@ -1010,10 +1121,14 @@ public sealed class DbIncidentRepository(RescueHubDbContext dbContext) : IIncide
             .AsQueryable();
 
         var normalizedStatusCode = string.IsNullOrWhiteSpace(statusCode)
-            ? "NEW"
+            ? null
             : statusCode.Trim().ToUpperInvariant();
 
-        query = query.Where(x => x.status_code == normalizedStatusCode);
+        if (!string.IsNullOrWhiteSpace(normalizedStatusCode) &&
+            !string.Equals(normalizedStatusCode, "ALL", StringComparison.Ordinal))
+        {
+            query = query.Where(x => x.status_code == normalizedStatusCode);
+        }
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {

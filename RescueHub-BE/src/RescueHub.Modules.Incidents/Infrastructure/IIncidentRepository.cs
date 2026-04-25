@@ -24,6 +24,8 @@ public interface IIncidentRepository
 
     Task<object> GetReliefRequestHotspotsForCoordinator(string? statusCode, int days, int top);
 
+    Task<object> GetReliefRequestHotspotDetailForCoordinator(Guid adminAreaId, string? statusCode, int days, int page, int pageSize);
+
     Task<object> ListReliefRequestsForCoordinator(string? statusCode, string? keyword, int page, int pageSize);
 
     Task<object> GetReliefRequestForCoordinator(Guid reliefRequestId);
