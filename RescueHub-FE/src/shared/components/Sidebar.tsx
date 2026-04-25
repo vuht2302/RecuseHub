@@ -63,7 +63,7 @@ const managerMenuItems: ManagerMenuItem[] = [
   },
   {
     id: "rescue-team",
-    label: "Quan ly doi cuu ho",
+    label: "Quản lý đội cứu hộ",
     icon: Users,
     color: "text-black-600",
   },
