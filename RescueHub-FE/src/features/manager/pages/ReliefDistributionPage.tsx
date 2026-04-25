@@ -171,10 +171,9 @@ export const ReliefDistributionPage: React.FC<{ className?: string }> = ({
     void loadDistributions();
   };
 
-  // Handle relief issue created
-  // Format household name helper
-  const getHouseholdName = (dist: DistributionListItem) =>
-    dist.household?.headName || "—";
+  // Format recipient name helper
+  const getRecipientName = (dist: DistributionListItem) =>
+    dist.recipient?.name || "—";
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
@@ -341,7 +340,7 @@ export const ReliefDistributionPage: React.FC<{ className?: string }> = ({
                             {dist.code}
                           </h3>
                           <p className="text-[11px] text-gray-400">
-                            {getHouseholdName(dist)}
+                            {getRecipientName(dist)}
                           </p>
                         </div>
                         <StatusBadge
@@ -352,7 +351,7 @@ export const ReliefDistributionPage: React.FC<{ className?: string }> = ({
                       <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-400">
                         <span>
                           <MapPin size={10} className="inline" />{" "}
-                          {dist.reliefPoint?.name || "—"}
+                          {dist.adminArea?.name || "—"}
                         </span>
                         <span>•</span>
                         <span>{dist.lineCount} dòng</span>

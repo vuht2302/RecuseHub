@@ -77,12 +77,19 @@ function DetailModal({
               <div>
                 <span className="text-xs text-gray-500 block">Hộ dân</span>
                 <p className="font-semibold">{dist.recipient?.name || "—"}</p>
+                <p className="text-xs text-gray-400">
+                  {dist.recipient?.address || ""}
+                </p>
+                <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                  <span>👥 {dist.recipient?.memberCount ?? 0}</span>
+                  <span>
+                    ⚠️ {dist.recipient?.vulnerableCount ?? 0} dễ tổn thương
+                  </span>
+                </div>
               </div>
               <div>
-                <span className="text-xs text-gray-500 block">
-                  Điểm cứu trợ
-                </span>
-                <p className="font-semibold">{dist.reliefPoint?.name || "—"}</p>
+                <span className="text-xs text-gray-500 block">Khu vực</span>
+                <p className="font-semibold">{dist.adminArea?.name || "—"}</p>
               </div>
               <div>
                 <span className="text-xs text-gray-500 block">
@@ -114,7 +121,7 @@ function DetailModal({
             )}
             <div>
               <h3 className="text-sm font-bold mb-2">
-                Dòng hàng ({dist.lines?.length ?? 0})
+                Dòng hàng ({dist.lineCount ?? 0})
               </h3>
               <div className="rounded-lg border border-gray-100 overflow-hidden">
                 <table className="w-full text-sm">
@@ -629,11 +636,13 @@ function statusBadge(code: string) {
   const m: Record<string, string> = {
     PENDING: "bg-amber-100 text-amber-700",
     ACKNOWLEDGED: "bg-emerald-100 text-emerald-700",
+    COMPLETED: "bg-blue-100 text-blue-700",
     CANCELLED: "bg-red-100 text-red-600",
   };
   const l: Record<string, string> = {
     PENDING: "Chờ nhận",
     ACKNOWLEDGED: "Đã nhận",
+    COMPLETED: "Hoàn thành",
     CANCELLED: "Đã hủy",
   };
   return (
@@ -743,11 +752,21 @@ export const DistributionTab: React.FC = () => {
                   <td className="px-4 py-3 font-mono text-xs text-blue-700 font-semibold whitespace-nowrap">
                     {dist.code}
                   </td>
-                  <td className="px-4 py-3 text-gray-800 font-medium whitespace-nowrap">
-                    {dist.household?.headName || "—"}
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-gray-800">
+                      {dist.recipient?.name || "—"}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {dist.recipient?.address || ""}
+                    </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                    {dist.campaign?.name || "—"}
+                  <td className="px-4 py-3 text-gray-600">
+                    <div className="font-medium">
+                      {dist.campaign?.name || "—"}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {dist.adminArea?.name || ""}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-gray-600 text-xs">
                     {dist.ackMethodCode}

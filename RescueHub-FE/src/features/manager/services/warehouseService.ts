@@ -655,13 +655,15 @@ export interface DistributionListItem {
   code: string;
   status: CodeName;
   campaign: { id: string; code: string; name: string } | null;
-  reliefPoint: { id: string; code: string; name: string } | null;
-  household: {
+  adminArea: { id: string; code: string; name: string } | null;
+  recipient: {
     id: string;
     code: string;
-    headName: string;
+    name: string;
     phone: string;
     address: string;
+    memberCount: number;
+    vulnerableCount: number;
   } | null;
   ackMethodCode: string;
   note: string;
@@ -675,7 +677,7 @@ export interface Distribution {
   code: string;
   status: CodeName;
   campaign: { id: string; code: string; name: string } | null;
-  reliefPoint: { id: string; code: string; name: string } | null;
+  adminArea: { id: string; code: string; name: string } | null;
   recipient: {
     id: string;
     code: string;
@@ -685,9 +687,9 @@ export interface Distribution {
     memberCount: number;
     vulnerableCount: number;
   } | null;
-  // incidentId: string | null;
   ackMethodCode: string;
   note: string;
+  lineCount: number;
   lines: Array<{
     id: string;
     item: { id: string; code: string; name: string };
