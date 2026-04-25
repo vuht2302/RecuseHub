@@ -959,14 +959,15 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         return new { id = householdId, deleted = true };
     }
 
-    public async Task<object> ListDistributions(Guid? campaignId, Guid? reliefPointId, string? statusCode, int page, int pageSize)
+    public async Task<object> ListDistributions(Guid? campaignId, Guid? adminAreaId, string? statusCode, int page, int pageSize)
     {
         (page, pageSize) = NormalizePaging(page, pageSize);
 
         var query = dbContext.distributions
             .AsNoTracking()
             .Include(x => x.campaign)
-            .Include(x => x.relief_point)
+            .Include(x => x.relief_point!)
+            .ThenInclude(x => x.admin_area)
             .Include(x => x.household)
             .AsQueryable();
 
@@ -975,9 +976,9 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             query = query.Where(x => x.campaign_id == campaignId.Value);
         }
 
-        if (reliefPointId.HasValue)
+        if (adminAreaId.HasValue)
         {
-            query = query.Where(x => x.relief_point_id == reliefPointId.Value);
+            query = query.Where(x => x.relief_point != null && x.relief_point.admin_area_id == adminAreaId.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(statusCode))
@@ -997,7 +998,9 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
                 code = x.code,
                 status = new { code = x.status_code, name = x.status_code, color = (string?)null },
                 campaign = x.campaign == null ? null : new { id = x.campaign.id, code = x.campaign.code, name = x.campaign.name },
-                reliefPoint = x.relief_point == null ? null : new { id = x.relief_point.id, code = x.relief_point.code, name = x.relief_point.name },
+                adminArea = x.relief_point == null || x.relief_point.admin_area == null
+                    ? null
+                    : new { id = x.relief_point.admin_area.id, code = x.relief_point.admin_area.code, name = x.relief_point.admin_area.name },
                 recipient = new
                 {
                     id = x.household.id,
@@ -1569,7 +1572,8 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         var distribution = await dbContext.distributions
             .AsNoTracking()
             .Include(x => x.campaign)
-            .Include(x => x.relief_point)
+            .Include(x => x.relief_point!)
+            .ThenInclude(x => x.admin_area)
             .Include(x => x.household)
             .Include(x => x.distribution_lines)
             .ThenInclude(x => x.item)
@@ -1589,7 +1593,9 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             code = distribution.code,
             status = new { code = distribution.status_code, name = distribution.status_code, color = (string?)null },
             campaign = distribution.campaign == null ? null : new { id = distribution.campaign.id, code = distribution.campaign.code, name = distribution.campaign.name },
-            reliefPoint = distribution.relief_point == null ? null : new { id = distribution.relief_point.id, code = distribution.relief_point.code, name = distribution.relief_point.name },
+            adminArea = distribution.relief_point == null || distribution.relief_point.admin_area == null
+                ? null
+                : new { id = distribution.relief_point.admin_area.id, code = distribution.relief_point.admin_area.code, name = distribution.relief_point.admin_area.name },
             recipient = new
             {
                 id = distribution.household.id,

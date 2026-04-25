@@ -54,7 +54,7 @@ public interface IWarehouseManagementRepository
 
     Task<object> DeleteHousehold(Guid householdId);
 
-    Task<object> ListDistributions(Guid? campaignId, Guid? reliefPointId, string? statusCode, int page, int pageSize);
+    Task<object> ListDistributions(Guid? campaignId, Guid? adminAreaId, string? statusCode, int page, int pageSize);
 
     Task<object> ListReliefCampaigns(string? keyword, string? statusCode);
 

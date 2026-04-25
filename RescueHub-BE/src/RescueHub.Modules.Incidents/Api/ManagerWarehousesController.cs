@@ -408,7 +408,7 @@ public sealed class ManagerWarehousesController(IWarehouseManagementService serv
     /// Lay danh sach phieu phan phoi.
     /// </summary>
     /// <param name="campaignId">Loc theo chien dich.</param>
-    /// <param name="reliefPointId">Loc theo diem cuu tro.</param>
+    /// <param name="adminAreaId">Loc theo khu vuc hanh chinh.</param>
     /// <param name="statusCode">Loc theo trang thai phieu phan phoi.</param>
     /// <param name="page">Trang hien tai.</param>
     /// <param name="pageSize">Kich thuoc trang.</param>
@@ -416,11 +416,11 @@ public sealed class ManagerWarehousesController(IWarehouseManagementService serv
     [HttpGet("distributions")]
     public async Task<ActionResult<ApiResponse<object>>> ListDistributions(
         [FromQuery] Guid? campaignId,
-        [FromQuery] Guid? reliefPointId,
+        [FromQuery] Guid? adminAreaId,
         [FromQuery] string? statusCode,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
-        => OkResponse<object>(await service.ListDistributions(campaignId, reliefPointId, statusCode, page, pageSize), "Lay danh sach phan phoi thanh cong");
+        => OkResponse<object>(await service.ListDistributions(campaignId, adminAreaId, statusCode, page, pageSize), "Lay danh sach phan phoi thanh cong");
 
     /// <summary>
     /// Cap nhat trang thai yeu cau cuu tro.

@@ -57,8 +57,8 @@ public sealed class WarehouseManagementService(IWarehouseManagementRepository re
 
     public Task<object> DeleteHousehold(Guid householdId) => repository.DeleteHousehold(householdId);
 
-    public Task<object> ListDistributions(Guid? campaignId, Guid? reliefPointId, string? statusCode, int page, int pageSize)
-        => repository.ListDistributions(campaignId, reliefPointId, statusCode, page, pageSize);
+    public Task<object> ListDistributions(Guid? campaignId, Guid? adminAreaId, string? statusCode, int page, int pageSize)
+        => repository.ListDistributions(campaignId, adminAreaId, statusCode, page, pageSize);
 
     public Task<object> ListReliefCampaigns(string? keyword, string? statusCode)
         => repository.ListReliefCampaigns(keyword, statusCode);
