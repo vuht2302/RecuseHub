@@ -181,6 +181,29 @@ public sealed class IncidentsController(IIncidentService service) : BaseApiContr
             "Lay diem nong yeu cau cuu tro thanh cong");
 
     /// <summary>
+    /// Lay chi tiet hotspot theo khu vuc: campaign lien quan va danh sach relief request.
+    /// </summary>
+    [HttpGet("relief-requests/hotspots/{adminAreaId:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> GetReliefRequestHotspotDetail(
+        [FromRoute] Guid adminAreaId,
+        [FromQuery] string? statusCode,
+        [FromQuery] int days = 30,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            return OkResponse<object>(
+                await service.GetReliefRequestHotspotDetailForCoordinator(adminAreaId, statusCode, days, page, pageSize),
+                "Lay chi tiet hotspot yeu cau cuu tro thanh cong");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequestResponse<object>(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Lay danh sach yeu cau cuu tro cho coordinator xu ly chuan hoa phan phoi.
     /// </summary>
     [HttpGet("relief-requests")]

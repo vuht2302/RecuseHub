@@ -1128,22 +1128,22 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             .ToListAsync();
 
         var campaignIds = campaigns.Select(x => x.id).ToArray();
-        var reliefPointRows = await dbContext.relief_points
+        var reliefPointRows = await dbContext.campaign_relief_points
             .AsNoTracking()
-            .Include(x => x.admin_area)
             .Where(x => campaignIds.Contains(x.campaign_id))
-            .OrderBy(x => x.code)
+            .Select(x => new { x.campaign_id, point = x.relief_point })
+            .OrderBy(x => x.point.code)
             .Select(x => new
             {
                 campaignId = x.campaign_id,
                 point = new
                 {
-                    id = x.id,
-                    code = x.code,
-                    name = x.name,
-                    statusCode = x.status_code,
-                    addressText = x.address_text,
-                    adminArea = x.admin_area == null ? null : new { id = x.admin_area.id, code = x.admin_area.code, name = x.admin_area.name }
+                    id = x.point.id,
+                    code = x.point.code,
+                    name = x.point.name,
+                    statusCode = x.point.status_code,
+                    addressText = x.point.address_text,
+                    adminArea = x.point.admin_area == null ? null : new { id = x.point.admin_area.id, code = x.point.admin_area.code, name = x.point.admin_area.name }
                 }
             })
             .ToListAsync();
@@ -1181,9 +1181,85 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         var campaign = await dbContext.relief_campaigns
             .AsNoTracking()
             .Include(x => x.admin_area)
-            .Include(x => x.relief_points)
             .FirstOrDefaultAsync(x => x.id == campaignId)
             ?? throw new InvalidOperationException("Khong tim thay chien dich.");
+
+        var reliefPoints = await dbContext.campaign_relief_points
+            .AsNoTracking()
+            .Where(x => x.campaign_id == campaignId)
+            .Select(x => x.relief_point)
+            .OrderBy(x => x.code)
+            .Select(x => new
+            {
+                id = x.id,
+                code = x.code,
+                name = x.name,
+                statusCode = x.status_code,
+                addressText = x.address_text,
+                adminArea = x.admin_area == null ? null : new { id = x.admin_area.id, code = x.admin_area.code, name = x.admin_area.name }
+            })
+            .ToListAsync();
+
+        var reliefRequests = await dbContext.relief_requests
+            .AsNoTracking()
+            .Include(x => x.admin_area)
+            .Include(x => x.linked_incident)
+            .Include(x => x.relief_request_items)
+            .ThenInclude(x => x.item)
+            .Where(x => x.campaign_id == campaignId)
+            .OrderByDescending(x => x.updated_at)
+            .ThenByDescending(x => x.created_at)
+            .Select(x => new
+            {
+                id = x.id,
+                code = x.code,
+                sourceTypeCode = x.source_type_code,
+                status = new { code = x.status_code, name = x.status_code, color = (string?)null },
+                requester = new
+                {
+                    name = x.requester_name,
+                    phone = x.requester_phone
+                },
+                householdCount = x.household_count,
+                addressText = x.address_text,
+                adminArea = x.admin_area == null
+                    ? null
+                    : new { id = x.admin_area.id, code = x.admin_area.code, name = x.admin_area.name },
+                location = x.geom == null ? null : new
+                {
+                    lat = (decimal)x.geom.Y,
+                    lng = (decimal)x.geom.X
+                },
+                incident = x.linked_incident == null
+                    ? null
+                    : new { id = x.linked_incident.id, code = x.linked_incident.code, statusCode = x.linked_incident.status_code },
+                items = x.relief_request_items
+                    .OrderBy(i => i.item.code)
+                    .Select(i => new
+                    {
+                        reliefRequestItemId = i.id,
+                        supportTypeCode = i.item.code,
+                        supportTypeName = i.item.name,
+                        requestedQty = i.requested_qty,
+                        approvedQty = i.approved_qty,
+                        unitCode = i.unit_code
+                    })
+                    .ToList(),
+                note = x.note,
+                createdAt = x.created_at,
+                updatedAt = x.updated_at
+            })
+            .ToListAsync();
+
+        var reliefRequestSummary = new
+        {
+            total = reliefRequests.Count,
+            newCount = reliefRequests.Count(x => x.status.code == "NEW"),
+            approvedCount = reliefRequests.Count(x => x.status.code == "APPROVED"),
+            fulfilledCount = reliefRequests.Count(x => x.status.code == "FULFILLED"),
+            rejectedCount = reliefRequests.Count(x => x.status.code == "REJECTED"),
+            cancelledCount = reliefRequests.Count(x => x.status.code == "CANCELLED")
+        };
 
         return new
         {
@@ -1195,16 +1271,10 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             startAt = campaign.start_at,
             endAt = campaign.end_at,
             description = campaign.description,
-            reliefPoints = campaign.relief_points
-                .OrderBy(x => x.code)
-                .Select(x => new
-                {
-                    id = x.id,
-                    code = x.code,
-                    name = x.name,
-                    statusCode = x.status_code
-                })
-                .ToList()
+            reliefPointCount = reliefPoints.Count,
+            reliefPoints,
+            reliefRequestSummary,
+            reliefRequests
         };
     }
 
@@ -1215,9 +1285,10 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             .FirstOrDefaultAsync(x => x.id == campaignId)
             ?? throw new InvalidOperationException("Khong tim thay chien dich.");
 
-        var reliefPoints = await dbContext.relief_points
+        var reliefPoints = await dbContext.campaign_relief_points
             .AsNoTracking()
-            .Where(x => x.campaign_id == campaignId && x.status_code == "OPEN")
+            .Where(x => x.campaign_id == campaignId && x.relief_point.status_code == "OPEN")
+            .Select(x => x.relief_point)
             .OrderBy(x => x.code)
             .Select(x => new
             {
@@ -1475,7 +1546,6 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
 
         var reliefPoints = await dbContext.relief_points
             .AsNoTracking()
-            .Include(x => x.campaign)
             .OrderBy(x => x.code)
             .Select(x => new
             {
@@ -1484,9 +1554,6 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
                 name = x.name,
                 statusCode = x.status_code,
                 addressText = x.address_text,
-                campaign = x.campaign == null
-                    ? null
-                    : new { id = x.campaign.id, code = x.campaign.code, name = x.campaign.name },
                 location = ToLocationItem(x.geom)
             })
             .ToListAsync();
@@ -1519,7 +1586,6 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
     {
         var query = dbContext.relief_points
             .AsNoTracking()
-            .Include(x => x.campaign)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(keyword))
@@ -1543,14 +1609,40 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
                 name = x.name,
                 status = new { code = x.status_code, name = x.status_code, color = (string?)null },
                 addressText = x.address_text,
-                location = ToLocationItem(x.geom),
-                campaign = x.campaign == null
-                    ? null
-                    : new { id = x.campaign.id, code = x.campaign.code, name = x.campaign.name }
+                location = ToLocationItem(x.geom)
             })
             .ToListAsync();
 
-        return new { items };
+        var pointIds = items.Select(x => x.id).ToArray();
+        var campaignLinks = await dbContext.campaign_relief_points
+            .AsNoTracking()
+            .Where(x => pointIds.Contains(x.relief_point_id))
+            .OrderBy(x => x.campaign.code)
+            .Select(x => new
+            {
+                pointId = x.relief_point_id,
+                campaign = (object)new { id = x.campaign_id, code = x.campaign.code, name = x.campaign.name, statusCode = x.campaign.status_code }
+            })
+            .ToListAsync();
+
+        var campaignsByPoint = campaignLinks
+            .GroupBy(x => x.pointId)
+            .ToDictionary(x => x.Key, x => x.Select(v => v.campaign).ToList());
+
+        var mappedItems = items.Select(x => new
+        {
+            x.id,
+            x.code,
+            x.name,
+            x.status,
+            x.addressText,
+            x.location,
+            campaigns = campaignsByPoint.TryGetValue(x.id, out var campaigns)
+                ? campaigns
+                : new List<object>()
+        });
+
+        return new { items = mappedItems };
     }
 
     public async Task<object> CreateReliefPoint(CreateReliefPointRequest request)
@@ -1580,14 +1672,11 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         }
 
         var adminAreaId = await ResolveAdminAreaIdFromLocation(new GeoPointRequest(request.Location.Lat, request.Location.Lng));
-        var campaign = await ResolveCampaignForReliefPoint(adminAreaId);
-
         var entity = new relief_point
         {
             id = Guid.NewGuid(),
             code = code,
             name = name,
-            campaign_id = campaign.id,
             admin_area_id = adminAreaId,
             address_text = addressText,
             geom = new Point((double)request.Location.Lng, (double)request.Location.Lat) { SRID = 4326 },
@@ -1607,7 +1696,6 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             name = entity.name,
             statusCode = entity.status_code,
             addressText = entity.address_text,
-            campaign = new { id = campaign.id, code = campaign.code, name = campaign.name },
             adminAreaId,
             location = new { lat = request.Location.Lat, lng = request.Location.Lng }
         };
@@ -1617,9 +1705,15 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
     {
         var entity = await dbContext.relief_points
             .AsNoTracking()
-            .Include(x => x.campaign)
             .FirstOrDefaultAsync(x => x.id == reliefPointId)
             ?? throw new InvalidOperationException("Khong tim thay diem cuu tro.");
+
+        var campaigns = await dbContext.campaign_relief_points
+            .AsNoTracking()
+            .Where(x => x.relief_point_id == reliefPointId)
+            .OrderBy(x => x.campaign.code)
+            .Select(x => new { id = x.campaign_id, code = x.campaign.code, name = x.campaign.name, statusCode = x.campaign.status_code })
+            .ToListAsync();
 
         return new
         {
@@ -1628,7 +1722,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             name = entity.name,
             statusCode = entity.status_code,
             addressText = entity.address_text,
-            campaign = entity.campaign == null ? null : new { id = entity.campaign.id, code = entity.campaign.code, name = entity.campaign.name },
+            campaigns,
             location = ToLocationItem(entity.geom),
             opensAt = entity.opens_at,
             closesAt = entity.closes_at
@@ -1657,7 +1751,6 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
         }
 
         EnsureAllowed(statusCode, ReliefPointStatusCodes, nameof(request.StatusCode));
-        await EnsureCampaignExists(request.CampaignId);
         await EnsureAdminAreaExists(request.AdminAreaId);
         await EnsureUserExists(request.ManagerUserId);
 
@@ -1668,13 +1761,14 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
 
         entity.code = code;
         entity.name = name;
-        entity.campaign_id = request.CampaignId;
         entity.admin_area_id = request.AdminAreaId;
         entity.address_text = addressText;
         entity.geom = new Point((double)request.Location.Lng, (double)request.Location.Lat) { SRID = 4326 };
         entity.manager_user_id = request.ManagerUserId;
         entity.status_code = statusCode;
 
+        await EnsureCampaignExists(request.CampaignId);
+        await LinkReliefPointToCampaign(request.CampaignId, reliefPointId);
         await dbContext.SaveChangesAsync();
 
         return new
@@ -2264,7 +2358,8 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
 
         if (campaignId.HasValue)
         {
-            query = query.Where(x => x.campaign_id == campaignId.Value);
+            query = query.Where(x =>
+                dbContext.campaign_relief_points.Any(link => link.campaign_id == campaignId.Value && link.relief_point_id == x.id));
         }
 
         if (adminAreaId.HasValue)
@@ -2283,9 +2378,10 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
 
         if (campaignId.HasValue)
         {
-            reliefPoint = await dbContext.relief_points
+            reliefPoint = await dbContext.campaign_relief_points
                 .AsNoTracking()
-                .Where(x => x.campaign_id == campaignId.Value && x.status_code == "OPEN")
+                .Where(x => x.campaign_id == campaignId.Value && x.relief_point.status_code == "OPEN")
+                .Select(x => x.relief_point)
                 .OrderBy(x => x.code)
                 .FirstOrDefaultAsync();
         }
@@ -2432,10 +2528,44 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             throw new InvalidOperationException("Co relief point khong hop le trong danh sach ReliefPointIds.");
         }
 
-        foreach (var reliefPoint in reliefPoints)
+        var existingLinks = await dbContext.campaign_relief_points
+            .Where(x => x.campaign_id == campaignId && normalizedIds.Contains(x.relief_point_id))
+            .Select(x => x.relief_point_id)
+            .ToArrayAsync();
+
+        var existingSet = existingLinks.ToHashSet();
+        var linksToAdd = normalizedIds
+            .Where(x => !existingSet.Contains(x))
+            .Select(x => new campaign_relief_point
+            {
+                campaign_id = campaignId,
+                relief_point_id = x,
+                created_at = DateTime.UtcNow
+            })
+            .ToArray();
+
+        if (linksToAdd.Length > 0)
         {
-            reliefPoint.campaign_id = campaignId;
+            dbContext.campaign_relief_points.AddRange(linksToAdd);
         }
+    }
+
+    private async Task LinkReliefPointToCampaign(Guid campaignId, Guid reliefPointId)
+    {
+        var exists = await dbContext.campaign_relief_points
+            .AnyAsync(x => x.campaign_id == campaignId && x.relief_point_id == reliefPointId);
+
+        if (exists)
+        {
+            return;
+        }
+
+        dbContext.campaign_relief_points.Add(new campaign_relief_point
+        {
+            campaign_id = campaignId,
+            relief_point_id = reliefPointId,
+            created_at = DateTime.UtcNow
+        });
     }
 
     private async Task EnsureReliefPointExists(Guid? reliefPointId)

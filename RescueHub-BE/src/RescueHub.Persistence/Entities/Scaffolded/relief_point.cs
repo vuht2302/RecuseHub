@@ -12,8 +12,6 @@ public partial class relief_point
 
     public string name { get; set; } = null!;
 
-    public Guid campaign_id { get; set; }
-
     public Guid? admin_area_id { get; set; }
 
     public string address_text { get; set; } = null!;
@@ -30,9 +28,9 @@ public partial class relief_point
 
     public virtual admin_area? admin_area { get; set; }
 
-    public virtual relief_campaign campaign { get; set; } = null!;
-
     public virtual ICollection<distribution> distributions { get; set; } = new List<distribution>();
+
+    public virtual ICollection<campaign_relief_point> campaign_relief_points { get; set; } = new List<campaign_relief_point>();
 
     public virtual app_user? manager_user { get; set; }
 

@@ -26,6 +26,8 @@ public partial class RescueHubDbContext : DbContext
 
     public virtual DbSet<audit_log> audit_logs { get; set; }
 
+    public virtual DbSet<campaign_relief_point> campaign_relief_points { get; set; }
+
     public virtual DbSet<distribution> distributions { get; set; }
 
     public virtual DbSet<distribution_ack> distribution_acks { get; set; }
@@ -296,6 +298,23 @@ public partial class RescueHubDbContext : DbContext
             entity.HasOne(d => d.distribution).WithOne(p => p.distribution_ack)
                 .HasForeignKey<distribution_ack>(d => d.distribution_id)
                 .HasConstraintName("distribution_ack_distribution_id_fkey");
+        });
+
+        modelBuilder.Entity<campaign_relief_point>(entity =>
+        {
+            entity.HasKey(e => new { e.campaign_id, e.relief_point_id }).HasName("campaign_relief_points_pkey");
+
+            entity.ToTable("campaign_relief_points");
+
+            entity.Property(e => e.created_at).HasDefaultValueSql("now()");
+
+            entity.HasOne(d => d.campaign).WithMany(p => p.campaign_relief_points)
+                .HasForeignKey(d => d.campaign_id)
+                .HasConstraintName("campaign_relief_points_campaign_id_fkey");
+
+            entity.HasOne(d => d.relief_point).WithMany(p => p.campaign_relief_points)
+                .HasForeignKey(d => d.relief_point_id)
+                .HasConstraintName("campaign_relief_points_relief_point_id_fkey");
         });
 
         modelBuilder.Entity<distribution_line>(entity =>
@@ -836,10 +855,6 @@ public partial class RescueHubDbContext : DbContext
             entity.HasOne(d => d.admin_area).WithMany(p => p.relief_points)
                 .HasForeignKey(d => d.admin_area_id)
                 .HasConstraintName("relief_point_admin_area_id_fkey");
-
-            entity.HasOne(d => d.campaign).WithMany(p => p.relief_points)
-                .HasForeignKey(d => d.campaign_id)
-                .HasConstraintName("relief_point_campaign_id_fkey");
 
             entity.HasOne(d => d.manager_user).WithMany(p => p.relief_points)
                 .HasForeignKey(d => d.manager_user_id)
