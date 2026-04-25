@@ -415,20 +415,11 @@ export function CreateReliefDistributionModal({
                     <p className="text-[10px] text-gray-500 font-semibold uppercase mb-1">
                       Chiến dịch
                     </p>
-                    <select
-                      value={campaignId}
-                      onChange={(e) =>
-                        void handleCampaignChange(e.target.value)
-                      }
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400 bg-white"
-                    >
-                      <option value="">-- Chọn chiến dịch --</option>
-                      {campaigns.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({c.code})
-                        </option>
-                      ))}
-                    </select>
+                    <div className="h-[42px] flex items-center px-3 border border-gray-200 rounded-lg bg-gray-50 text-sm">
+                      {campaignDetail
+                        ? `${campaignDetail.name} (${campaignDetail.code})`
+                        : "—"}
+                    </div>
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-500 font-semibold uppercase mb-1">
@@ -459,7 +450,7 @@ export function CreateReliefDistributionModal({
                       team.code ? `${team.name} (${team.code})` : team.name
                     }
                     getSubLabel={() => "AVAILABLE"}
-                    placeholder="-- Chọn đội AVAILABLE --"
+                    placeholder="-- Chọn đội có sẵn"
                     searchPlaceholder="Tìm đội cứu trợ..."
                     loading={loading}
                   />
