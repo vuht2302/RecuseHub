@@ -20,6 +20,76 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
     private static readonly HashSet<string> CampaignStatusCodes = ["PLANNED", "ACTIVE", "CLOSED", "CANCELLED"];
     private static readonly HashSet<string> AckMethodCodes = ["OTP", "MANUAL"];
 
+    public async Task<object> GetManagerDashboard()
+    {
+        var todayUtc = DateTime.UtcNow.Date;
+
+        var warehouseActiveCount = await dbContext.warehouses
+            .AsNoTracking()
+            .CountAsync(x => x.status_code == "ACTIVE");
+
+        var campaignActiveCount = await dbContext.relief_campaigns
+            .AsNoTracking()
+            .CountAsync(x => x.status_code == "ACTIVE" || x.status_code == "PLANNED");
+
+        var reliefPointOpenCount = await dbContext.relief_points
+            .AsNoTracking()
+            .CountAsync(x => x.status_code == "OPEN");
+
+        var distributionPendingCount = await dbContext.distributions
+            .AsNoTracking()
+            .CountAsync(x => x.status_code == "PENDING");
+
+        var distributionCompletedTodayCount = await dbContext.distributions
+            .AsNoTracking()
+            .CountAsync(x => x.status_code == "COMPLETED" && x.distribution_ack != null && x.distribution_ack.ack_at >= todayUtc);
+
+        var reliefRequestPendingCount = await dbContext.relief_requests
+            .AsNoTracking()
+            .CountAsync(x => x.status_code == "NEW" || x.status_code == "APPROVED");
+
+        var unresolvedStockAlertCount = await dbContext.stock_alerts
+            .AsNoTracking()
+            .CountAsync(x => !x.is_resolved);
+
+        var totalOnHandQty = await dbContext.stock_balances
+            .AsNoTracking()
+            .SumAsync(x => x.qty_on_hand);
+
+        var recentDistributions = await dbContext.distributions
+            .AsNoTracking()
+            .Include(x => x.campaign)
+            .Include(x => x.relief_point!)
+            .ThenInclude(x => x.admin_area)
+            .OrderByDescending(x => x.created_at)
+            .Take(5)
+            .Select(x => new
+            {
+                distributionId = x.id,
+                distributionCode = x.code,
+                status = new { code = x.status_code, name = x.status_code, color = (string?)null },
+                campaign = x.campaign == null ? null : new { id = x.campaign.id, code = x.campaign.code, name = x.campaign.name },
+                adminArea = x.relief_point == null || x.relief_point.admin_area == null
+                    ? null
+                    : new { id = x.relief_point.admin_area.id, code = x.relief_point.admin_area.code, name = x.relief_point.admin_area.name },
+                createdAt = x.created_at
+            })
+            .ToListAsync();
+
+        return new
+        {
+            warehouseActiveCount,
+            campaignActiveCount,
+            reliefPointOpenCount,
+            distributionPendingCount,
+            distributionCompletedTodayCount,
+            reliefRequestPendingCount,
+            unresolvedStockAlertCount,
+            totalOnHandQty,
+            recentDistributions
+        };
+    }
+
     public async Task<object> ListWarehouses(string? keyword, string? statusCode)
     {
         var query = dbContext.warehouses

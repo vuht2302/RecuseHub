@@ -4,6 +4,8 @@ namespace RescueHub.Modules.Incidents.Application;
 
 public sealed class WarehouseManagementService(IWarehouseManagementRepository repository) : IWarehouseManagementService
 {
+    public Task<object> GetManagerDashboard() => repository.GetManagerDashboard();
+
     public Task<object> ListWarehouses(string? keyword, string? statusCode) => repository.ListWarehouses(keyword, statusCode);
 
     public Task<object> GetWarehouse(Guid warehouseId) => repository.GetWarehouse(warehouseId);
