@@ -13,6 +13,13 @@ namespace RescueHub.Modules.Incidents.Api;
 public sealed class ManagerWarehousesController(IWarehouseManagementService service, IIncidentService incidentService) : BaseApiController
 {
     /// <summary>
+    /// Dashboard tong quan cho manager.
+    /// </summary>
+    [HttpGet("dashboard")]
+    public async Task<ActionResult<ApiResponse<object>>> GetDashboard()
+        => OkResponse<object>(await service.GetManagerDashboard(), "Lay dashboard manager thanh cong");
+
+    /// <summary>
     /// Lay danh sach kho theo tu khoa va trang thai.
     /// </summary>
     /// <param name="keyword">Tu khoa tim theo ma/ten/dia chi kho.</param>

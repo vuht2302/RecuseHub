@@ -2,6 +2,8 @@ namespace RescueHub.Modules.Incidents.Application;
 
 public interface IWarehouseManagementService
 {
+    Task<object> GetManagerDashboard();
+
     Task<object> ListWarehouses(string? keyword, string? statusCode);
 
     Task<object> GetWarehouse(Guid warehouseId);
