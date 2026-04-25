@@ -409,7 +409,7 @@ public sealed class DbTeamManagementRepository(RescueHubDbContext dbContext) : I
         {
             throw new InvalidOperationException("Khong the suy ra admin area tu toa do home base.");
         }
-        var currentLocation = request.CurrentLocation ?? request.HomeBase.Location;
+        var currentLocation = request.CurrentLocation;
 
         var now = DateTime.UtcNow;
         var team = new team
