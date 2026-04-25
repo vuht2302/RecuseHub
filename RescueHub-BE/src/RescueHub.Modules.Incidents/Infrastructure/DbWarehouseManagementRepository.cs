@@ -1111,7 +1111,7 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
             query = query.Where(x => x.status_code == normalized);
         }
 
-        var items = await query
+        var campaigns = await query
             .OrderByDescending(x => x.start_at)
             .ThenBy(x => x.code)
             .Select(x => new
@@ -1123,10 +1123,55 @@ public sealed class DbWarehouseManagementRepository(RescueHubDbContext dbContext
                 adminArea = x.admin_area == null ? null : new { id = x.admin_area.id, code = x.admin_area.code, name = x.admin_area.name },
                 startAt = x.start_at,
                 endAt = x.end_at,
-                description = x.description,
-                reliefPointCount = x.relief_points.Count
+                description = x.description
             })
             .ToListAsync();
+
+        var campaignIds = campaigns.Select(x => x.id).ToArray();
+        var reliefPointRows = await dbContext.relief_points
+            .AsNoTracking()
+            .Include(x => x.admin_area)
+            .Where(x => campaignIds.Contains(x.campaign_id))
+            .OrderBy(x => x.code)
+            .Select(x => new
+            {
+                campaignId = x.campaign_id,
+                point = new
+                {
+                    id = x.id,
+                    code = x.code,
+                    name = x.name,
+                    statusCode = x.status_code,
+                    addressText = x.address_text,
+                    adminArea = x.admin_area == null ? null : new { id = x.admin_area.id, code = x.admin_area.code, name = x.admin_area.name }
+                }
+            })
+            .ToListAsync();
+
+        var reliefPointsByCampaign = reliefPointRows
+            .GroupBy(x => x.campaignId)
+            .ToDictionary(x => x.Key, x => x.Select(v => v.point).ToList());
+
+        var items = campaigns.Select(x =>
+        {
+            var reliefPoints = reliefPointsByCampaign.TryGetValue(x.id, out var points)
+                ? points
+                : [];
+
+            return new
+            {
+                x.id,
+                x.code,
+                x.name,
+                x.status,
+                x.adminArea,
+                x.startAt,
+                x.endAt,
+                x.description,
+                reliefPointCount = reliefPoints.Count,
+                reliefPoints
+            };
+        });
 
         return new { items };
     }
